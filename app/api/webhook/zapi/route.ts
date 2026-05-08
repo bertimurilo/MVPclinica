@@ -24,11 +24,21 @@ const WebhookSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  // Validate secret from header or query param
   const expectedSecret = process.env.Z_API_WEBHOOK_SECRET
-  if (expectedSecret) {
+  const isDev = process.env.NODE_ENV === 'development'
+
+  if (!expectedSecret) {
+    if (isDev) {
+      console.warn('[webhook] Z_API_WEBHOOK_SECRET no configurada — permitido solo en desarrollo')
+    } else {
+      console.error('[webhook] Z_API_WEBHOOK_SECRET no configurada en producción — request rechazada')
+      return NextResponse.json({ error: 'Misconfigured' }, { status: 500 })
+    }
+  } else {
     const headerSecret = req.headers.get('x-webhook-secret')
     const querySecret = req.nextUrl.searchParams.get('secret')
+    // Z-API no soporta headers custom — aceptamos query param con riesgo documentado
+    // RIESGO: el secret queda en logs de servidor. Mitigar cuando se actualice el plan.
     if (headerSecret !== expectedSecret && querySecret !== expectedSecret) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
