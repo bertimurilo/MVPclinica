@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Set-Location \"C:\\\\Users\\\\berti\\\\Downloads\\\\saasclinica\"; Get-ChildItem -Recurse -Exclude node_modules,.next | Where-Object { $_.FullName -notmatch 'node_modules|\\\\.next' } | Select-Object FullName | ForEach-Object { $_.FullName.Replace\\(\"C:\\\\Users\\\\berti\\\\Downloads\\\\saasclinica\\\\\", \"\"\\) } | Sort-Object)",
+      "PowerShell(npm run *)",
+      "Read(//mnt/c/Users/berti/Downloads/**)",
+      "Bash(npm run *)",
+      "Bash(echo \"PID: $!\")",
+      "PowerShell(Start-Process -FilePath \"cmd.exe\" -ArgumentList \"/c\", \"cd /d C:\\\\Users\\\\berti\\\\Downloads\\\\saasclinica && npm run dev\" -WindowStyle Normal)",
+      "Bash(npm install *)"
+    ]
+  }
+}

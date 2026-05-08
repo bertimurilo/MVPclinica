@@ -1,0 +1,266 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { createClient } from '@/lib/supabase/server'
+import { sendMessage } from '@/lib/zapi'
+import type { Lead, LeadStatus, Message } from '@/lib/types'
+
+// ─── Auth helper ─────────────────────────────────────────────────────────────
+
+export async function getCurrentClinicId(): Promise<string> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No autenticado')
+
+  const { data } = await supabase
+    .from('users')
+    .select('clinic_id')
+    .eq('id', user.id)
+    .single()
+
+  const clinicId = (data as { clinic_id: string } | null)?.clinic_id
+  if (!clinicId) throw new Error('Clínica no encontrada')
+  return clinicId
+}
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+
+export async function getDashboardStats(clinicId: string) {
+  const supabase = createClient()
+  const now = new Date()
+
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+  const yesterdayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).toISOString()
+
+  const dayOfWeek = (now.getDay() + 6) % 7
+  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek).toISOString()
+  const lastWeekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek - 7).toISOString()
+
+  const thirtyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30).toISOString()
+
+  const [r1, r2, r3, r4, r5, r6] = await Promise.all([
+    supabase.from('leads').select('id', { count: 'exact', head: true })
+      .eq('clinic_id', clinicId).gte('created_at', todayStart),
+    supabase.from('leads').select('id', { count: 'exact', head: true })
+      .eq('clinic_id', clinicId).gte('created_at', yesterdayStart).lt('created_at', todayStart),
+    supabase.from('leads').select('id', { count: 'exact', head: true })
+      .eq('clinic_id', clinicId)
+      .neq('status', 'convertido').neq('status', 'inactivo').neq('status', 'perdido'),
+    supabase.from('appointments').select('id', { count: 'exact', head: true })
+      .eq('clinic_id', clinicId).gte('appointment_date', weekStart),
+    supabase.from('appointments').select('id', { count: 'exact', head: true })
+      .eq('clinic_id', clinicId).gte('appointment_date', lastWeekStart).lt('appointment_date', weekStart),
+    supabase.from('leads').select('status')
+      .eq('clinic_id', clinicId).gte('created_at', thirtyDaysAgo),
+  ])
+
+  const total30 = r6.data?.length ?? 0
+  const converted30 = (r6.data ?? []).filter((l: { status: string }) => l.status === 'convertido').length
+  const tasaConversion = total30 > 0 ? Math.round((converted30 / total30) * 100) : 0
+
+  return {
+    leads_hoy: r1.count ?? 0,
+    leads_hoy_ayer: r2.count ?? 0,
+    leads_activos: r3.count ?? 0,
+    citas_semana: r4.count ?? 0,
+    citas_semana_pasada: r5.count ?? 0,
+    tasa_conversion: tasaConversion,
+  }
+}
+
+export async function getRecentLeads(clinicId: string) {
+  const supabase = createClient()
+
+  const { data: leads } = await supabase
+    .from('leads')
+    .select('id, name, phone, status, qualification, score, last_message_at, treatment_interest')
+    .eq('clinic_id', clinicId)
+    .order('last_message_at', { ascending: false, nullsFirst: false })
+    .limit(10)
+
+  if (!leads || leads.length === 0) return []
+
+  const leadIds = (leads as Array<{ id: string }>).map(l => l.id)
+  const { data: messages } = await supabase
+    .from('messages')
+    .select('lead_id, content')
+    .in('lead_id', leadIds)
+    .eq('clinic_id', clinicId)
+    .order('created_at', { ascending: false })
+
+  const lastMsgByLead: Record<string, string> = {}
+  for (const msg of (messages ?? []) as Array<{ lead_id: string; content: string }>) {
+    if (!lastMsgByLead[msg.lead_id]) lastMsgByLead[msg.lead_id] = msg.content
+  }
+
+  return (leads as Array<{ id: string; [key: string]: unknown }>).map(l => ({
+    ...l,
+    last_message: lastMsgByLead[l.id] ?? null,
+  }))
+}
+
+export async function getLeadsDistribution(clinicId: string): Promise<Record<string, number>> {
+  const supabase = createClient()
+  const { data } = await supabase.from('leads').select('status').eq('clinic_id', clinicId)
+  const counts: Record<string, number> = {}
+  for (const row of (data ?? []) as Array<{ status: string }>) {
+    counts[row.status] = (counts[row.status] ?? 0) + 1
+  }
+  return counts
+}
+
+// ─── Leads ────────────────────────────────────────────────────────────────────
+
+export async function getLeads(
+  clinicId: string,
+  options?: { status?: string; search?: string; limit?: number }
+): Promise<Lead[]> {
+  const supabase = createClient()
+
+  let query = supabase
+    .from('leads')
+    .select('*')
+    .eq('clinic_id', clinicId)
+    .order('last_message_at', { ascending: false, nullsFirst: false })
+
+  if (options?.status && options.status !== 'all') {
+    query = query.eq('status', options.status)
+  }
+  if (options?.search) {
+    const s = options.search.replace(/[%_']/g, '')
+    if (s) query = query.or(`name.ilike.%${s}%,phone.ilike.%${s}%`)
+  }
+  if (options?.limit) {
+    query = query.limit(options.limit)
+  }
+
+  const { data } = await query
+  return (data ?? []) as unknown as Lead[]
+}
+
+export async function getLead(
+  leadId: string,
+  clinicId: string
+): Promise<{ lead: Lead; messages: Message[] } | null> {
+  const supabase = createClient()
+
+  const [{ data: lead }, { data: messages }] = await Promise.all([
+    supabase
+      .from('leads')
+      .select('*, appointments(*, treatment:treatments(*))')
+      .eq('id', leadId)
+      .eq('clinic_id', clinicId)
+      .single(),
+    supabase
+      .from('messages')
+      .select('*')
+      .eq('lead_id', leadId)
+      .eq('clinic_id', clinicId)
+      .order('created_at', { ascending: true }),
+  ])
+
+  if (!lead) return null
+  return {
+    lead: lead as unknown as Lead,
+    messages: (messages ?? []) as unknown as Message[],
+  }
+}
+
+export async function updateLeadStatus(leadId: string, clinicId: string, status: LeadStatus) {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('leads')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', leadId)
+    .eq('clinic_id', clinicId)
+
+  if (error) return { error: error.message }
+  revalidatePath(`/leads/${leadId}`)
+  revalidatePath('/leads')
+  return { success: true }
+}
+
+export async function saveLeadNote(leadId: string, clinicId: string, notes: string) {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('leads')
+    .update({ notes, updated_at: new Date().toISOString() })
+    .eq('id', leadId)
+    .eq('clinic_id', clinicId)
+
+  if (error) return { error: error.message }
+  revalidatePath(`/leads/${leadId}`)
+  return { success: true }
+}
+
+export async function escalateLead(leadId: string, clinicId: string) {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('leads')
+    .update({ escalated: true, updated_at: new Date().toISOString() })
+    .eq('id', leadId)
+    .eq('clinic_id', clinicId)
+
+  if (error) return { error: error.message }
+  revalidatePath(`/leads/${leadId}`)
+  return { success: true }
+}
+
+export async function sendHumanMessage(leadId: string, clinicId: string, content: string) {
+  if (!content.trim()) return { error: 'Mensaje vacío' }
+
+  const supabase = createClient()
+
+  const [{ data: lead }, { data: clinic }] = await Promise.all([
+    supabase.from('leads').select('phone').eq('id', leadId).eq('clinic_id', clinicId).single(),
+    supabase
+      .from('clinics')
+      .select('z_api_instance_id, z_api_token, z_api_connected')
+      .eq('id', clinicId)
+      .single(),
+  ])
+
+  if (!lead) return { error: 'Lead no encontrado' }
+
+  const { error } = await supabase.from('messages').insert({
+    lead_id: leadId,
+    clinic_id: clinicId,
+    direction: 'outbound',
+    sender: 'human',
+    message_type: 'text',
+    content: content.trim(),
+  })
+
+  if (error) return { error: error.message }
+
+  const c = clinic as { z_api_instance_id?: string; z_api_token?: string; z_api_connected?: boolean } | null
+  if (c?.z_api_connected && c.z_api_instance_id && c.z_api_token) {
+    await sendMessage(
+      (lead as { phone: string }).phone,
+      content.trim(),
+      c.z_api_instance_id,
+      c.z_api_token
+    )
+  }
+
+  revalidatePath(`/leads/${leadId}`)
+  return { success: true }
+}
+
+// ─── Appointments ─────────────────────────────────────────────────────────────
+
+export async function getAppointmentsByMonth(clinicId: string, year: number, month: number) {
+  const supabase = createClient()
+  const startDate = new Date(year, month, 1).toISOString()
+  const endDate = new Date(year, month + 1, 1).toISOString()
+
+  const { data } = await supabase
+    .from('appointments')
+    .select('*, lead:leads(name, phone), treatment:treatments(name, price, duration_minutes)')
+    .eq('clinic_id', clinicId)
+    .gte('appointment_date', startDate)
+    .lt('appointment_date', endDate)
+    .order('appointment_date')
+
+  return data ?? []
+}
