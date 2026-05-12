@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import VenuIcon from '@/components/ui/VenuIcon'
 
 const navItems = [
   {
@@ -75,13 +76,9 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="px-5 py-5 border-b border-gray-800">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center shrink-0">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-          </div>
+          <VenuIcon size={32} className="shrink-0" />
           <div>
-            <p className="text-sm font-bold text-white leading-none">Cliniq AI</p>
+            <p className="text-sm font-bold text-white leading-none">Venu</p>
             <p className="text-xs text-gray-500 mt-0.5">Panel de control</p>
           </div>
         </div>

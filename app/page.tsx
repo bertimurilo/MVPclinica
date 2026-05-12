@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import './landing.css'
+import VenuIcon from '@/components/ui/VenuIcon'
 
 export default function LandingPage() {
   const [btnText, setBtnText] = useState('Unirme →')
@@ -44,7 +45,7 @@ export default function LandingPage() {
       <nav>
         <div className="container">
           <a href="#" className="logo">
-            <span className="logo-mark">V</span>
+            <VenuIcon size={26} />
             Venu
           </a>
           <div className="nav-links">
@@ -699,7 +700,7 @@ export default function LandingPage() {
         <div className="container">
           <div>
             <a href="#" className="logo" style={{ marginBottom: 14, display: 'flex' }}>
-              <span className="logo-mark">V</span>
+              <VenuIcon size={26} />
               Venu
             </a>
             <p style={{ color: 'var(--fg-muted)', fontSize: 13, maxWidth: 280 }}>

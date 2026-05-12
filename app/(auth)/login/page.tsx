@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import VenuIcon from '@/components/ui/VenuIcon'
 
 export default function LoginPage() {
   const [email, setEmail]       = useState('')
@@ -36,13 +37,9 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex flex-col items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-            </div>
+            <VenuIcon size={44} />
             <div>
-              <h1 className="text-xl font-bold text-white">Cliniq AI</h1>
+              <h1 className="text-xl font-bold text-white">Venu</h1>
               <p className="text-sm text-gray-500 mt-0.5">Accede a tu panel</p>
             </div>
           </div>
@@ -107,7 +104,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-xs text-gray-700 mt-6">
-          Cliniq AI © 2025
+          Venu © 2026
         </p>
       </div>
     </div>
