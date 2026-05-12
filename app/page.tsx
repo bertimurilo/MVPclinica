@@ -396,7 +396,7 @@ export default function LandingPage() {
                 <span className="l">Pérdida mensual</span>
                 <span className="a">€1.600</span>
               </div>
-              <div className="roi-foot">// Venu cuesta €149/mes. La cuenta sale sola.</div>
+              <div className="roi-foot">{'// Venu cuesta €149/mes. La cuenta sale sola.'}</div>
             </aside>
           </div>
         </div>
