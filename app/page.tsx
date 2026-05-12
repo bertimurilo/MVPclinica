@@ -52,6 +52,7 @@ export default function LandingPage() {
             <a href="#funciona">Cómo funciona</a>
             <a href="#producto">Producto</a>
             <a href="#precio">Precio</a>
+            <a href="/login" className="btn btn-ghost">Acceder</a>
             <a href="#waitlist" className="btn btn-primary">Reservar plaza</a>
           </div>
         </div>
