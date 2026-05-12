@@ -697,17 +697,8 @@ export default function LandingPage() {
 
       {/* FOOTER */}
       <footer>
-        <div className="container">
-          <div>
-            <a href="#" className="logo" style={{ marginBottom: 14, display: 'flex' }}>
-              <VenuIcon size={26} />
-              Venu
-            </a>
-            <p style={{ color: 'var(--fg-muted)', fontSize: 13, maxWidth: 280 }}>
-              CRM para clínicas.
-            </p>
-          </div>
-          <div className="lgrid">
+        <div className="container" style={{ justifyContent: 'center' }}>
+          <div className="lgrid" style={{ justifyContent: 'center' }}>
             <div className="col">
               <h5>Producto</h5>
               <a href="#producto">Funcionalidades</a>
@@ -726,8 +717,8 @@ export default function LandingPage() {
               <a href="#problema">El problema</a>
             </div>
           </div>
-          <div className="legal">
-            <span>© 2026 Venu · Hecho en España</span>
+          <div className="legal" style={{ justifyContent: 'center' }}>
+            <span>© 2026 Venu</span>
             <span className="mono">v0.1.0 · beta</span>
           </div>
         </div>
