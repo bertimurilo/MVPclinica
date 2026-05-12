@@ -704,7 +704,7 @@ export default function LandingPage() {
               Venu
             </a>
             <p style={{ color: 'var(--fg-muted)', fontSize: 13, maxWidth: 280 }}>
-              El CRM automatizado para clínicas estéticas.
+              CRM para clínicas.
             </p>
           </div>
           <div className="lgrid">

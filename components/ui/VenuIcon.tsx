@@ -16,17 +16,17 @@ export default function VenuIcon({ size = 32, className }: VenuIconProps) {
       <rect width="100" height="100" rx="22" fill="#5B50CC" />
       {/* Secondary V — muted purple, offset right */}
       <path
-        d="M 33 24 L 57 74 L 81 24"
-        stroke="#8580D0"
-        strokeWidth="11"
+        d="M 34 20 L 58 78 L 82 20"
+        stroke="#8A86D4"
+        strokeWidth="13"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       {/* Primary V — white, offset left */}
       <path
-        d="M 19 24 L 43 74 L 67 24"
+        d="M 18 20 L 42 78 L 66 20"
         stroke="white"
-        strokeWidth="11"
+        strokeWidth="13"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
