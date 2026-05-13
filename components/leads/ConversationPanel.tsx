@@ -92,8 +92,8 @@ export function ConversationPanel({
                     !isOut
                       ? 'bg-gray-700 text-white rounded-tl-sm'
                       : isAgent
-                      ? 'bg-[#7C3AED]/25 text-white rounded-tr-sm'
-                      : 'bg-[#7C3AED] text-white rounded-tr-sm'
+                      ? 'bg-emerald-500/25 text-white rounded-tr-sm'
+                      : 'bg-emerald-500 text-white rounded-tr-sm'
                   }`}
                 >
                   {isOut && (
@@ -135,7 +135,7 @@ export function ConversationPanel({
           <button
             onClick={handleSend}
             disabled={!input.trim() || isPending}
-            className="w-7 h-7 bg-[#7C3AED] hover:bg-[#6D28D9] rounded-lg flex items-center justify-center transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-7 h-7 bg-emerald-500 hover:bg-emerald-600 rounded-lg flex items-center justify-center transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="22" y1="2" x2="11" y2="13" />

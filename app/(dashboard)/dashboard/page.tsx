@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: 'Dashboard' }
 const QUALIF_COLOR: Record<string, string> = {
   frio:     'text-blue-400',
   tibio:    'text-amber-400',
-  caliente: 'text-[#7C3AED]',
+  caliente: 'text-emerald-500',
 }
 
 const QUALIF_LABEL: Record<string, string> = {
@@ -22,7 +22,7 @@ const QUALIF_LABEL: Record<string, string> = {
 const DIST_CONFIG = [
   { key: 'nuevo',         label: 'Nuevos',        color: 'bg-blue-500' },
   { key: 'contactado',    label: 'Contactados',   color: 'bg-amber-500' },
-  { key: 'cita_agendada', label: 'Cita agendada', color: 'bg-[#7C3AED]' },
+  { key: 'cita_agendada', label: 'Cita agendada', color: 'bg-emerald-500' },
   { key: 'convertido',    label: 'Convertidos',   color: 'bg-emerald-500' },
   { key: 'perdido',       label: 'Perdidos',      color: 'bg-gray-600' },
 ]
@@ -121,7 +121,7 @@ export default async function DashboardPage() {
         <div className="lg:col-span-3 bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-700 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-white">Leads recientes</h3>
-            <Link href="/leads" className="text-xs text-[#7C3AED] hover:text-purple-400 transition-colors">
+            <Link href="/leads" className="text-xs text-emerald-500 hover:text-purple-400 transition-colors">
               Ver todos →
             </Link>
           </div>
@@ -151,7 +151,7 @@ export default async function DashboardPage() {
                     href={`/leads/${l.id}`}
                     className="px-5 py-3.5 flex items-center gap-4 hover:bg-gray-700/50 transition-colors block"
                   >
-                    <div className="w-8 h-8 rounded-full bg-[#7C3AED]/20 border border-[#7C3AED]/30 flex items-center justify-center text-xs font-bold text-[#7C3AED] shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-xs font-bold text-emerald-500 shrink-0">
                       {initial}
                     </div>
                     <div className="flex-1 min-w-0">

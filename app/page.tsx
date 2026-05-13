@@ -87,22 +87,12 @@ export default function LandingPage() {
             </a>
           </div>
 
-          <div className="hero-meta">
-            <span>Sin tarjeta</span>
-            <span className="dot" />
-            <span>Setup en 24h</span>
-          </div>
-
           {/* Product demo */}
           <div className="demo-wrap">
             <div className="demo-frame">
               <div className="demo-tabs">
                 <div className="traffic">
                   <span /><span /><span />
-                </div>
-                <div className="demo-title">
-                  <span className="dotgreen" />
-                  app.venu.app / dashboard
                 </div>
                 <div style={{ width: 54 }} />
               </div>

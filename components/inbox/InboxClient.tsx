@@ -113,7 +113,7 @@ export function InboxClient({ clinicId, initialLeads }: InboxClientProps) {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-[#7C3AED]/20 border border-[#7C3AED]/30 flex items-center justify-center text-sm font-bold text-[#7C3AED] shrink-0">
+                    <div className="w-9 h-9 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-sm font-bold text-emerald-500 shrink-0">
                       {initial}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -157,7 +157,7 @@ export function InboxClient({ clinicId, initialLeads }: InboxClientProps) {
             {/* Header */}
             <div className="px-5 py-3.5 border-b border-gray-700 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-[#7C3AED]/20 border border-[#7C3AED]/30 flex items-center justify-center text-sm font-bold text-[#7C3AED] shrink-0">
+                <div className="w-9 h-9 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-sm font-bold text-emerald-500 shrink-0">
                   {(selectedLeadData?.name ?? selectedLeadData?.phone ?? '?').charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -194,8 +194,8 @@ export function InboxClient({ clinicId, initialLeads }: InboxClientProps) {
                           !isOut
                             ? 'bg-gray-700 text-white rounded-tl-sm'
                             : isAgent
-                            ? 'bg-[#7C3AED]/25 text-white rounded-tr-sm'
-                            : 'bg-[#7C3AED] text-white rounded-tr-sm'
+                            ? 'bg-emerald-500/25 text-white rounded-tr-sm'
+                            : 'bg-emerald-500 text-white rounded-tr-sm'
                         }`}
                       >
                         {isOut && (
@@ -237,7 +237,7 @@ export function InboxClient({ clinicId, initialLeads }: InboxClientProps) {
                 <button
                   onClick={handleSend}
                   disabled={!input.trim() || isPending}
-                  className="w-7 h-7 bg-[#7C3AED] hover:bg-[#6D28D9] rounded-lg flex items-center justify-center transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-7 h-7 bg-emerald-500 hover:bg-emerald-600 rounded-lg flex items-center justify-center transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="22" y1="2" x2="11" y2="13" />

@@ -20,7 +20,7 @@ export function TabNav({ active }: { active: string }) {
           onClick={() => router.push(`/settings?tab=${tab.id}`)}
           className={`px-4 py-2 text-sm rounded-lg font-medium transition-all ${
             active === tab.id
-              ? 'bg-[#7C3AED] text-white shadow-sm'
+              ? 'bg-emerald-500 text-white shadow-sm'
               : 'text-gray-400 hover:text-white hover:bg-gray-700'
           }`}
         >

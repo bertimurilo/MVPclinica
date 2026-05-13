@@ -66,7 +66,7 @@ export function TreatmentsTab({ treatments }: { treatments: Treatment[] }) {
         {!editing && (
           <button
             onClick={() => setEditing(BLANK)}
-            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-[#7C3AED] hover:bg-[#6D28D9] text-white transition-colors flex items-center gap-1.5"
+            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white transition-colors flex items-center gap-1.5"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -100,7 +100,7 @@ export function TreatmentsTab({ treatments }: { treatments: Treatment[] }) {
             <p className="text-xs text-gray-600 mt-1">Añade los servicios que ofrece tu clínica</p>
             <button
               onClick={() => setEditing(BLANK)}
-              className="mt-4 px-4 py-2 text-sm font-medium rounded-lg bg-[#7C3AED] hover:bg-[#6D28D9] text-white transition-colors"
+              className="mt-4 px-4 py-2 text-sm font-medium rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white transition-colors"
             >
               Añadir primer tratamiento
             </button>
@@ -173,7 +173,7 @@ export function TreatmentsTab({ treatments }: { treatments: Treatment[] }) {
 }
 
 const INPUT_CLS =
-  'w-full bg-gray-900 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm placeholder:text-gray-600 outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] transition-all'
+  'w-full bg-gray-900 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm placeholder:text-gray-600 outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all'
 
 function EditRow({
   state,
@@ -229,7 +229,7 @@ function EditRow({
             onChange={e => onChange({ ...state, active: e.target.checked })}
             className="sr-only peer"
           />
-          <span className="relative w-9 h-5 bg-gray-700 peer-checked:bg-[#7C3AED] rounded-full transition-colors block shrink-0 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-transform peer-checked:after:translate-x-4" />
+          <span className="relative w-9 h-5 bg-gray-700 peer-checked:bg-emerald-500 rounded-full transition-colors block shrink-0 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-transform peer-checked:after:translate-x-4" />
           <span className="text-sm text-gray-400">Activo</span>
         </label>
 
@@ -240,7 +240,7 @@ function EditRow({
           <button
             onClick={onSave}
             disabled={pending || !state.name.trim()}
-            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-[#7C3AED] hover:bg-[#6D28D9] text-white transition-colors disabled:opacity-50 flex items-center gap-1.5"
+            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white transition-colors disabled:opacity-50 flex items-center gap-1.5"
           >
             {pending && <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />}
             {isNew ? 'Crear' : 'Guardar'}

@@ -22,7 +22,7 @@ const TONES = [
 ]
 
 const INPUT_CLS =
-  'w-full bg-gray-900 border border-gray-700 text-white rounded-lg px-3.5 py-2.5 text-sm placeholder:text-gray-600 outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] transition-all resize-none'
+  'w-full bg-gray-900 border border-gray-700 text-white rounded-lg px-3.5 py-2.5 text-sm placeholder:text-gray-600 outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all resize-none'
 
 type Props = { config: AgentConfig | null }
 
@@ -64,10 +64,10 @@ export function AgentTab({ config }: Props) {
               />
               <div className={`p-3.5 rounded-xl border transition-all ${
                 tone === t.value
-                  ? 'border-[#7C3AED] bg-[#7C3AED]/10'
+                  ? 'border-emerald-500 bg-emerald-500/10'
                   : 'border-gray-700 bg-gray-900 hover:border-gray-600'
               }`}>
-                <p className={`text-sm font-semibold ${tone === t.value ? 'text-[#8B5CF6]' : 'text-white'}`}>
+                <p className={`text-sm font-semibold ${tone === t.value ? 'text-emerald-400' : 'text-white'}`}>
                   {t.label}
                 </p>
                 <p className="text-xs text-gray-500 mt-0.5">{t.desc}</p>
@@ -133,7 +133,7 @@ export function AgentTab({ config }: Props) {
                 type="checkbox"
                 name={rule.name}
                 defaultChecked={rule.defaultChecked}
-                className="mt-0.5 w-4 h-4 rounded border-gray-600 bg-gray-900 text-[#7C3AED] focus:ring-[#7C3AED]/30 shrink-0"
+                className="mt-0.5 w-4 h-4 rounded border-gray-600 bg-gray-900 text-emerald-500 focus:ring-emerald-500/30 shrink-0"
               />
               <div>
                 <p className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">{rule.label}</p>
@@ -158,7 +158,7 @@ export function AgentTab({ config }: Props) {
                   onChange={() => toggleDay(day.key)}
                   className="sr-only peer"
                 />
-                <span className="relative w-9 h-5 bg-gray-700 peer-checked:bg-[#7C3AED] rounded-full transition-colors block shrink-0 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-transform peer-checked:after:translate-x-4" />
+                <span className="relative w-9 h-5 bg-gray-700 peer-checked:bg-emerald-500 rounded-full transition-colors block shrink-0 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-transform peer-checked:after:translate-x-4" />
                 <span className="text-sm text-gray-300 w-24">{day.label}</span>
               </label>
 
@@ -169,14 +169,14 @@ export function AgentTab({ config }: Props) {
                     type="time"
                     name={`bh_${day.key}_open`}
                     defaultValue={config?.business_hours?.[day.key]?.open ?? '09:00'}
-                    className="bg-gray-900 border border-gray-700 text-white rounded-lg px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED]"
+                    className="bg-gray-900 border border-gray-700 text-white rounded-lg px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                   />
                   <span className="text-gray-600 text-sm">—</span>
                   <input
                     type="time"
                     name={`bh_${day.key}_close`}
                     defaultValue={config?.business_hours?.[day.key]?.close ?? '20:00'}
-                    className="bg-gray-900 border border-gray-700 text-white rounded-lg px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED]"
+                    className="bg-gray-900 border border-gray-700 text-white rounded-lg px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                   />
                 </div>
               ) : (
@@ -196,7 +196,7 @@ export function AgentTab({ config }: Props) {
             min="1"
             max="100"
             defaultValue={config?.max_auto_messages ?? 10}
-            className="w-24 bg-gray-900 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED]"
+            className="w-24 bg-gray-900 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
           />
           <p className="text-sm text-gray-400">
             El agente escalará al humano tras este número de mensajes automáticos
@@ -209,7 +209,7 @@ export function AgentTab({ config }: Props) {
         <button
           type="submit"
           disabled={isPending}
-          className="px-4 py-2 text-sm font-medium rounded-lg bg-[#7C3AED] hover:bg-[#6D28D9] text-white transition-colors disabled:opacity-50 flex items-center gap-2"
+          className="px-4 py-2 text-sm font-medium rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white transition-colors disabled:opacity-50 flex items-center gap-2"
         >
           {isPending && <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
           Guardar cambios

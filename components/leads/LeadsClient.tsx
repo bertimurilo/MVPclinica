@@ -16,7 +16,7 @@ const FILTER_TABS = [
 const STATUS_MAP: Record<LeadStatus, { label: string; cls: string }> = {
   nuevo:         { label: 'Nuevo',         cls: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
   contactado:    { label: 'Contactado',    cls: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
-  cita_agendada: { label: 'Cita agendada', cls: 'bg-[#7C3AED]/10 text-purple-400 border-[#7C3AED]/20' },
+  cita_agendada: { label: 'Cita agendada', cls: 'bg-emerald-500/10 text-purple-400 border-emerald-500/20' },
   convertido:    { label: 'Convertido',    cls: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
   inactivo:      { label: 'Inactivo',      cls: 'bg-gray-700/50 text-gray-500 border-gray-700' },
   perdido:       { label: 'Perdido',       cls: 'bg-red-500/10 text-red-400 border-red-500/20' },
@@ -25,7 +25,7 @@ const STATUS_MAP: Record<LeadStatus, { label: string; cls: string }> = {
 const QUALIF_MAP: Record<LeadQualification, { label: string; cls: string }> = {
   frio:     { label: 'Frío',     cls: 'text-blue-400' },
   tibio:    { label: 'Tibio',    cls: 'text-amber-400' },
-  caliente: { label: 'Caliente', cls: 'text-[#7C3AED]' },
+  caliente: { label: 'Caliente', cls: 'text-emerald-500' },
 }
 
 interface LeadsClientProps {
@@ -73,7 +73,7 @@ export function LeadsClient({ leads, currentSearch, currentStatus }: LeadsClient
         value={search}
         onChange={e => setSearch(e.target.value)}
         placeholder="Buscar por nombre o teléfono..."
-        className="w-full bg-gray-900 border border-gray-700 text-white rounded-lg px-4 py-2.5 text-sm placeholder:text-gray-600 outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] transition-all"
+        className="w-full bg-gray-900 border border-gray-700 text-white rounded-lg px-4 py-2.5 text-sm placeholder:text-gray-600 outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all"
       />
 
       {/* Filter tabs */}
@@ -84,7 +84,7 @@ export function LeadsClient({ leads, currentSearch, currentStatus }: LeadsClient
             onClick={() => setStatus(tab.key)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all border ${
               activeStatus === tab.key
-                ? 'bg-[#7C3AED]/10 text-[#7C3AED] border-[#7C3AED]/20'
+                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
                 : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800 border-transparent'
             }`}
           >
@@ -122,7 +122,7 @@ export function LeadsClient({ leads, currentSearch, currentStatus }: LeadsClient
                   >
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#7C3AED]/20 border border-[#7C3AED]/30 flex items-center justify-center text-xs font-bold text-[#7C3AED] shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-xs font-bold text-emerald-500 shrink-0">
                           {initial}
                         </div>
                         <div className="min-w-0">
@@ -144,7 +144,7 @@ export function LeadsClient({ leads, currentSearch, currentStatus }: LeadsClient
                     <td className="px-5 py-3.5 hidden lg:table-cell">
                       <div className="flex items-center gap-2">
                         <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden" style={{ width: 56 }}>
-                          <div className="h-full bg-[#7C3AED] rounded-full" style={{ width: `${lead.score}%` }} />
+                          <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${lead.score}%` }} />
                         </div>
                         <span className="text-xs text-gray-500 w-6">{lead.score}</span>
                       </div>

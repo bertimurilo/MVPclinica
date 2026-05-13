@@ -161,13 +161,13 @@ export function CalendarView({ appointments, month, year }: Props) {
                   onClick={() => cell.currentMonth && setSelectedDay(cell.day === selectedDay ? null : cell.day)}
                   className={`min-h-[90px] p-2 border-b border-r border-gray-700/50 text-left transition-colors ${
                     !cell.currentMonth ? 'opacity-30 cursor-default' :
-                    isSelected ? 'bg-[#7C3AED]/10' :
+                    isSelected ? 'bg-emerald-500/10' :
                     'hover:bg-gray-700/40 cursor-pointer'
                   }`}
                 >
                   <span className={`inline-flex w-6 h-6 items-center justify-center rounded-full text-xs font-medium mb-1.5 ${
                     isToday(cell.day) && cell.currentMonth
-                      ? 'bg-[#7C3AED] text-white'
+                      ? 'bg-emerald-500 text-white'
                       : cell.currentMonth
                         ? 'text-gray-300'
                         : 'text-gray-600'
@@ -263,7 +263,7 @@ export function CalendarView({ appointments, month, year }: Props) {
                           className={`text-xs px-2.5 py-1 rounded-lg border transition-colors disabled:opacity-40 ${
                             sa.status === 'cancelada' || sa.status === 'no_show'
                               ? 'border-gray-700 text-gray-400 hover:border-red-500/40 hover:text-red-400'
-                              : 'border-gray-700 text-gray-400 hover:border-[#7C3AED]/40 hover:text-[#8B5CF6]'
+                              : 'border-gray-700 text-gray-400 hover:border-emerald-500/40 hover:text-emerald-400'
                           }`}
                         >
                           {sa.label}

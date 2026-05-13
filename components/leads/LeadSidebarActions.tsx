@@ -69,7 +69,7 @@ export function LeadSidebarActions({
           value={status}
           onChange={e => handleStatusChange(e.target.value)}
           disabled={isPending}
-          className="w-full bg-gray-900 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] transition-all disabled:opacity-50"
+          className="w-full bg-gray-900 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all disabled:opacity-50"
         >
           {STATUS_OPTIONS.map(opt => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -85,7 +85,7 @@ export function LeadSidebarActions({
           onChange={e => setNotes(e.target.value)}
           rows={3}
           placeholder="Añade notas sobre este lead..."
-          className="w-full bg-gray-900 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm placeholder:text-gray-600 outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] transition-all resize-none"
+          className="w-full bg-gray-900 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm placeholder:text-gray-600 outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all resize-none"
         />
         <button
           onClick={handleSaveNotes}
@@ -93,7 +93,7 @@ export function LeadSidebarActions({
           className={`mt-1 text-xs transition-colors disabled:opacity-40 ${
             notesStatus === 'saved' ? 'text-emerald-400' :
             notesStatus === 'error' ? 'text-red-400' :
-            'text-[#7C3AED] hover:text-purple-400'
+            'text-emerald-500 hover:text-purple-400'
           }`}
         >
           {notesStatus === 'saved' ? '✓ Guardado' : notesStatus === 'error' ? 'Error al guardar' : 'Guardar nota'}

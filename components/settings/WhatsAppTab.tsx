@@ -67,7 +67,7 @@ export function WhatsAppTab({ connected, phoneWhatsapp }: Props) {
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 ${
               isConnected
                 ? 'bg-gray-700 hover:bg-gray-600 text-white border border-gray-600'
-                : 'bg-[#7C3AED] hover:bg-[#6D28D9] text-white'
+                : 'bg-emerald-500 hover:bg-emerald-600 text-white'
             }`}
           >
             {isPending && (

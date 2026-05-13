@@ -57,7 +57,7 @@ function SaveButton({ pending }: { pending: boolean }) {
     <button
       type="submit"
       disabled={pending}
-      className="px-4 py-2 text-sm font-medium rounded-lg bg-[#7C3AED] hover:bg-[#6D28D9] text-white transition-colors disabled:opacity-50 flex items-center gap-2"
+      className="px-4 py-2 text-sm font-medium rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white transition-colors disabled:opacity-50 flex items-center gap-2"
     >
       {pending && (
         <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />

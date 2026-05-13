@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: 'Lead' }
 const QUALIF: Record<LeadQualification, { label: string; cls: string }> = {
   frio:     { label: 'Frío',     cls: 'bg-blue-500/10 text-blue-400 border border-blue-500/20' },
   tibio:    { label: 'Tibio',    cls: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' },
-  caliente: { label: 'Caliente', cls: 'bg-[#7C3AED]/10 text-purple-400 border border-[#7C3AED]/20' },
+  caliente: { label: 'Caliente', cls: 'bg-emerald-500/10 text-purple-400 border border-emerald-500/20' },
 }
 
 export default async function LeadDetailPage({ params }: { params: { id: string } }) {
@@ -51,7 +51,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
 
             {/* Avatar + name */}
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-11 h-11 rounded-full bg-[#7C3AED]/20 border border-[#7C3AED]/30 flex items-center justify-center text-base font-bold text-[#7C3AED] shrink-0">
+              <div className="w-11 h-11 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-base font-bold text-emerald-500 shrink-0">
                 {initial}
               </div>
               <div className="min-w-0">
@@ -78,7 +78,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
                 <span className="text-xs text-gray-500 shrink-0">Score</span>
                 <div className="flex items-center gap-2">
                   <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden" style={{ width: 56 }}>
-                    <div className="h-full bg-[#7C3AED] rounded-full" style={{ width: `${lead.score}%` }} />
+                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${lead.score}%` }} />
                   </div>
                   <span className="text-xs text-gray-400 w-6 text-right">{lead.score}</span>
                 </div>
