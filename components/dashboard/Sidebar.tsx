@@ -39,21 +39,10 @@ const makeNav = (): NavItem[] => [
   {
     href: '/leads',
     label: 'Pipeline',
-    isActive: (p) => p === '/leads',
+    isActive: (p) => p.startsWith('/leads'),
     icon: (
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <rect x="3" y="3" width="7" height="18" /><rect x="14" y="3" width="7" height="10" />
-      </svg>
-    ),
-  },
-  {
-    href: '/leads',
-    label: 'Clientes',
-    isActive: (p) => p.startsWith('/leads/'),
-    icon: (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
       </svg>
     ),
   },
@@ -79,7 +68,7 @@ export default function Sidebar({ clinicName, leadsCount = 0 }: SidebarProps) {
   const router = useRouter()
   const navItems = makeNav()
 
-  navItems[3].badge = leadsCount || undefined
+  navItems[2].badge = leadsCount || undefined
 
   const handleLogout = async () => {
     const supabase = createClient()

@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   '/dashboard':    { title: 'Dashboard',               subtitle: 'Resumen de actividad' },
-  '/leads':        { title: 'Leads',                   subtitle: 'Gestión de contactos' },
+  '/leads':        { title: 'Pipeline',                 subtitle: 'Gestión de contactos' },
   '/conversations':{ title: 'Conversaciones',          subtitle: 'Historial de mensajes' },
   '/appointments': { title: 'Citas',                   subtitle: 'Agenda de la clínica' },
   '/agent-config': { title: 'Configuración del Agente', subtitle: 'Personaliza el agente IA' },

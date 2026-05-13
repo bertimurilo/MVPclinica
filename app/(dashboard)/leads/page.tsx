@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { getCurrentClinicId, getLeads } from '@/lib/actions'
 import { LeadsClient } from '@/components/leads/LeadsClient'
 
-export const metadata: Metadata = { title: 'Leads' }
+export const metadata: Metadata = { title: 'Pipeline' }
 
 type PageProps = {
   searchParams: { [key: string]: string | string[] | undefined }
@@ -26,7 +26,7 @@ export default async function LeadsPage({ searchParams }: PageProps) {
     <div className="space-y-5 max-w-5xl">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-white">Leads</h2>
+          <h2 className="text-lg font-semibold text-white">Pipeline</h2>
           <p className="text-sm text-gray-500 mt-0.5">{leads.length} contactos</p>
         </div>
       </div>
