@@ -20,30 +20,35 @@ export default function RegisterPage() {
     setLoading(true)
     setError('')
 
-    const supabase = createClient()
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { clinic_name: clinicName } },
-    })
+    try {
+      const supabase = createClient()
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { clinic_name: clinicName } },
+      })
 
-    if (authError) {
-      setError(authError.message)
-      setLoading(false)
-      return
-    }
-
-    if (authData.user) {
-      const result = await createClinicAndUser(authData.user.id, email, clinicName)
-      if (result.error) {
-        setError(result.error)
+      if (authError) {
+        setError(authError.message)
         setLoading(false)
         return
       }
-    }
 
-    router.push('/dashboard')
-    router.refresh()
+      if (authData.user) {
+        const result = await createClinicAndUser(authData.user.id, email, clinicName)
+        if (result.error) {
+          setError(result.error)
+          setLoading(false)
+          return
+        }
+      }
+
+      router.push('/dashboard')
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error inesperado. Inténtalo de nuevo.')
+      setLoading(false)
+    }
   }
 
   return (
