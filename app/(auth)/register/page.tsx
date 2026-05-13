@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import VenuIcon from '@/components/ui/VenuIcon'
+import { createClinicAndUser } from './actions'
 
 export default function RegisterPage() {
   const [email, setEmail]           = useState('')
@@ -20,21 +21,29 @@ export default function RegisterPage() {
     setError('')
 
     const supabase = createClient()
-    const { error: authError } = await supabase.auth.signUp({
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: { clinic_name: clinicName },
-      },
+      options: { data: { clinic_name: clinicName } },
     })
 
     if (authError) {
       setError(authError.message)
       setLoading(false)
-    } else {
-      router.push('/dashboard')
-      router.refresh()
+      return
     }
+
+    if (authData.user) {
+      const result = await createClinicAndUser(authData.user.id, email, clinicName)
+      if (result.error) {
+        setError(result.error)
+        setLoading(false)
+        return
+      }
+    }
+
+    router.push('/dashboard')
+    router.refresh()
   }
 
   return (
