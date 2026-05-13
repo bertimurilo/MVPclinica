@@ -20,7 +20,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
         .single()
 
       if (userData?.clinics) {
-        clinicName = (userData.clinics as { name: string }).name
+        const c = userData.clinics as unknown as { name: string } | { name: string }[]
+        clinicName = Array.isArray(c) ? c[0]?.name ?? clinicName : c.name
       }
 
       if (userData?.clinic_id) {
