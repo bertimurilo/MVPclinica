@@ -21,7 +21,7 @@ export default function Header() {
   const page = matched?.[1] ?? { title: 'Cliniq AI', subtitle: '' }
 
   return (
-    <header className="h-14 bg-gray-900 border-b border-gray-800 px-6 flex items-center justify-between shrink-0">
+    <header className="h-14 px-6 flex items-center justify-between shrink-0" style={{ background: '#0b1120', borderBottom: '1px solid #1a2235' }}>
       <div>
         <h1 className="text-sm font-semibold text-white leading-none">{page.title}</h1>
         {page.subtitle && (

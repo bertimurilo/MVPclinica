@@ -118,8 +118,8 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
 
         {/* Recent leads */}
-        <div className="lg:col-span-3 bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-700 flex items-center justify-between">
+        <div className="lg:col-span-3 rounded-xl overflow-hidden" style={{ background: '#111827', border: '1px solid #1f2937' }}>
+          <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #1f2937' }}>
             <h3 className="text-sm font-semibold text-white">Leads recientes</h3>
             <Link href="/leads" className="text-xs text-emerald-500 hover:text-purple-400 transition-colors">
               Ver todos →
@@ -134,7 +134,7 @@ export default async function DashboardPage() {
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-700">
+            <div className="divide-y divide-gray-800">
               {recentLeads.map((lead) => {
                 const l = lead as {
                   id: string
@@ -149,7 +149,7 @@ export default async function DashboardPage() {
                   <Link
                     key={l.id}
                     href={`/leads/${l.id}`}
-                    className="px-5 py-3.5 flex items-center gap-4 hover:bg-gray-700/50 transition-colors block"
+                    className="px-5 py-3.5 flex items-center gap-4 hover:bg-white/5 transition-colors block"
                   >
                     <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-xs font-bold text-emerald-500 shrink-0">
                       {initial}
@@ -183,7 +183,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* Status distribution */}
-        <div className="lg:col-span-2 bg-gray-800 border border-gray-700 rounded-xl p-5">
+        <div className="lg:col-span-2 rounded-xl p-5" style={{ background: '#111827', border: '1px solid #1f2937' }}>
           <h3 className="text-sm font-semibold text-white mb-4">Distribución de leads</h3>
 
           {totalLeads === 0 ? (
@@ -199,7 +199,7 @@ export default async function DashboardPage() {
                       <span className="text-gray-400">{item.label}</span>
                       <span className="text-gray-500">{count}</span>
                     </div>
-                    <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
                       <div
                         className={`h-full ${item.color} rounded-full transition-all`}
                         style={{ width: `${pct}%` }}
