@@ -5,7 +5,7 @@ import './landing.css'
 import VenuIcon from '@/components/ui/VenuIcon'
 
 export default function LandingPage() {
-  const [btnText, setBtnText] = useState('Unirme →')
+  const [btnText, setBtnText] = useState('Consigue acceso →')
   const [btnDone, setBtnDone] = useState(false)
   const revealRef = useRef<HTMLDivElement>(null)
 
@@ -33,7 +33,7 @@ export default function LandingPage() {
     const input = form.querySelector('input') as HTMLInputElement
     if (input) input.value = ''
     setTimeout(() => {
-      setBtnText('Unirme →')
+      setBtnText('Consigue acceso →')
       setBtnDone(false)
     }, 3500)
   }
@@ -63,28 +63,40 @@ export default function LandingPage() {
       <header className="hero">
         <div className="container">
           <a href="#waitlist" className="badge">
-            <span className="pill">NUEVO</span>
-            Beta privada · Plazas limitadas
+            <span className="pill">BETA PRIVADA</span>
+            Plazas muy limitadas
             <span className="arr">→</span>
           </a>
 
           <h1 className="display">
-            Tu WhatsApp pierde citas mientras tú estás{' '}
-            <span className="grad">con un cliente.</span>
+            Tu WhatsApp pierde citas{' '}
+            <span className="grad">mientras atiendes a otro cliente.</span>
           </h1>
 
           <p className="hero-sub">
-            Venu responde por ti. Atiende leads, resuelve dudas y agenda citas desde tu mismo
-            número, a cualquier hora y cualquier día.
+            Venu responde, califica y agenda 24/7 desde tu mismo número. Tus clientes
+            no notan nada. Solo que siempre obtienen respuesta.
           </p>
 
           <div className="hero-ctas">
             <a href="#waitlist" className="btn btn-primary btn-lg">
-              Reservar mi plaza →
+              Consigue mi plaza →
             </a>
             <a href="#funciona" className="btn btn-ghost btn-lg">
               Ver cómo funciona
             </a>
+          </div>
+
+          {/* Social proof */}
+          <div className="hero-proof">
+            <div className="proof-facepile">
+              <div className="proof-av">M</div>
+              <div className="proof-av">I</div>
+              <div className="proof-av">L</div>
+              <div className="proof-av">S</div>
+            </div>
+            <span className="proof-dot" />
+            <span>47 clínicas ya en la lista de espera</span>
           </div>
 
           {/* Product demo */}
@@ -196,15 +208,15 @@ export default function LandingPage() {
                     <svg className="chart-svg" viewBox="0 0 600 110" preserveAspectRatio="none">
                       <defs>
                         <linearGradient id="gradArea" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#10b981" stopOpacity="0.5" />
-                          <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                          <stop offset="0%" stopColor="#a855f7" stopOpacity="0.45" />
+                          <stop offset="100%" stopColor="#a855f7" stopOpacity="0" />
                         </linearGradient>
                         <linearGradient id="gradLine" x1="0" y1="0" x2="1" y2="0">
-                          <stop offset="0%" stopColor="#34d399" />
-                          <stop offset="100%" stopColor="#10b981" />
+                          <stop offset="0%" stopColor="#c084fc" />
+                          <stop offset="100%" stopColor="#7c3aed" />
                         </linearGradient>
                       </defs>
-                      <g stroke="#23232f" strokeWidth="1">
+                      <g stroke="#22224a" strokeWidth="1">
                         <line x1="0" y1="22" x2="600" y2="22" />
                         <line x1="0" y1="55" x2="600" y2="55" />
                         <line x1="0" y1="88" x2="600" y2="88" />
@@ -221,8 +233,8 @@ export default function LandingPage() {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       />
-                      <circle cx="600" cy="10" r="4" fill="#34d399" />
-                      <circle cx="600" cy="10" r="9" fill="#34d399" opacity="0.2" />
+                      <circle cx="600" cy="10" r="4" fill="#c084fc" />
+                      <circle cx="600" cy="10" r="9" fill="#c084fc" opacity="0.2" />
                     </svg>
                   </div>
 
@@ -298,7 +310,7 @@ export default function LandingPage() {
             <div className="l">tiempo medio que tarda una clínica en contestar</div>
           </div>
           <div className="stat">
-            <div className="n"><em>1/10</em></div>
+            <div className="n"><em>9/10</em></div>
             <div className="l">leads no vuelve si tardas más de 2 horas</div>
           </div>
           <div className="stat">
@@ -410,14 +422,14 @@ export default function LandingPage() {
 
           <div className="steps">
             <article className="step reveal">
-              <div className="n">PASO 01</div>
+              <div className="n">01</div>
               <h3>Conecta tu WhatsApp</h3>
               <p>
                 Enlazas tu número. El mismo que ya tienes. Tus clientes no notan ningún cambio.
               </p>
             </article>
             <article className="step reveal">
-              <div className="n">PASO 02</div>
+              <div className="n">02</div>
               <h3>Configura tu clínica</h3>
               <p>
                 Subes tus tratamientos, precios y el tono en el que quieres que conteste. Venu
@@ -425,7 +437,7 @@ export default function LandingPage() {
               </p>
             </article>
             <article className="step reveal">
-              <div className="n">PASO 03</div>
+              <div className="n">03</div>
               <h3>Abre la agenda y mira</h3>
               <p>Venu responde, filtra y agenda. Tú entras y ves el día lleno de citas confirmadas.</p>
             </article>
@@ -647,7 +659,7 @@ export default function LandingPage() {
                 <span className="n">149</span>
                 <span className="per">/mes</span>
               </div>
-              <p className="price-sub">Todo incluido.</p>
+              <p className="price-sub">Todo incluido. Sin sorpresas.</p>
               <ul className="price-list" style={{ listStyle: 'none' }}>
                 <li className="feature-li"><span className="ck">✓</span> WhatsApp 24/7</li>
                 <li className="feature-li"><span className="ck">✓</span> CRM con fichas de cliente</li>
@@ -658,7 +670,7 @@ export default function LandingPage() {
                 <li className="feature-li"><span className="ck">✓</span> Mensajes ilimitados</li>
               </ul>
               <a href="#waitlist" className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center' }}>
-                Reservar mi plaza →
+                Consigue mi plaza →
               </a>
             </div>
           </div>
@@ -670,14 +682,15 @@ export default function LandingPage() {
         <div className="container">
           <span className="eyebrow">Beta privada</span>
           <h2>
-            Prueba Venu <span className="grad">antes</span> que nadie.
+            Sé la primera clínica<br />
+            en <span className="grad">dejar de perder citas.</span>
           </h2>
           <p>Únete a la waitlist. Te avisamos cuando haya plaza. Sin compromiso, sin tarjeta.</p>
           <form className="waitlist-form" onSubmit={handleSubmit}>
             <input type="email" placeholder="tu@clinica.com" required aria-label="Email" />
             <button
               type="submit"
-              style={btnDone ? { background: 'var(--brand-700)' } : undefined}
+              style={btnDone ? { opacity: 0.8 } : undefined}
             >
               {btnText}
             </button>
@@ -709,7 +722,7 @@ export default function LandingPage() {
           </div>
           <div className="legal" style={{ justifyContent: 'center' }}>
             <span>© 2026 Venu</span>
-            <span className="mono">v0.1.0 · beta</span>
+            <span>v0.1.0 · beta</span>
           </div>
         </div>
       </footer>

@@ -205,12 +205,33 @@ export async function generateAgentResponse(
   let analysis: AgentAnalysis = failsafe('no_tool_call')
 
   try {
-    const completion = await getOpenAI().chat.completions.create({
+    // Step 1: generate text response
+    const textCompletion = await getOpenAI().chat.completions.create({
       model: MODEL,
       max_tokens: MAX_TOKENS,
       messages: [
         { role: 'system', content: systemPrompt },
         ...conversation,
+      ],
+    })
+    textResponse = textCompletion.choices[0].message.content?.trim() ?? ''
+
+    if (!textResponse) {
+      return {
+        response: config.fallback_message,
+        analysis: { ...analysis, should_escalate: true, escalation_reason: 'empty_response' },
+        was_sent: true,
+      }
+    }
+
+    // Step 2: analyze conversation to update lead metadata
+    const analysisCompletion = await getOpenAI().chat.completions.create({
+      model: MODEL,
+      max_tokens: 256,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...conversation,
+        { role: 'assistant', content: textResponse },
       ],
       tools: [{
         type: 'function',
@@ -223,27 +244,17 @@ export async function generateAgentResponse(
       tool_choice: { type: 'function', function: { name: 'analyze_conversation' } },
     })
 
-    const message = completion.choices[0].message
-    textResponse = message.content || ''
-    const toolCall = message.tool_calls?.[0]
+    const toolCall = analysisCompletion.choices[0].message.tool_calls?.[0]
     if (toolCall && toolCall.type === 'function') {
       const input = JSON.parse(toolCall.function.arguments) as Partial<AgentAnalysis>
       analysis = {
-        should_escalate: input.should_escalate ?? true,
+        should_escalate: input.should_escalate ?? false,
         escalation_reason: input.escalation_reason,
         detected_treatment: input.detected_treatment,
         intent: input.intent ?? 'other',
         qualification: input.qualification ?? 'frio',
         score_delta: typeof input.score_delta === 'number' ? input.score_delta : 0,
         proposed_appointment: input.proposed_appointment,
-      }
-    }
-
-    if (!textResponse.trim()) {
-      return {
-        response: config.fallback_message,
-        analysis: { ...analysis, should_escalate: true, escalation_reason: 'empty_response' },
-        was_sent: true,
       }
     }
   } catch (err) {

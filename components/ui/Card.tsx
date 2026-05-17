@@ -18,11 +18,16 @@ export function Card({ children, className, hover, padding = 'md', ...props }: C
     <div
       {...props}
       className={cn(
-        'bg-gray-800 border border-gray-700 rounded-xl',
-        hover && 'hover:border-emerald-500/30 transition-all duration-200 cursor-pointer',
+        'rounded-xl',
+        hover && 'hover:border-violet-500/30 hover:bg-white/[0.03] transition-all duration-200 cursor-pointer',
         paddings[padding],
         className
       )}
+      style={{
+        background: '#0e1628',
+        border: '1px solid rgba(255,255,255,0.07)',
+        ...(props.style ?? {}),
+      }}
     >
       {children}
     </div>
@@ -33,7 +38,8 @@ export function CardHeader({ children, className, ...props }: HTMLAttributes<HTM
   return (
     <div
       {...props}
-      className={cn('px-5 py-4 border-b border-gray-700', className)}
+      className={cn('px-5 py-4', className)}
+      style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', ...(props.style ?? {}) }}
     >
       {children}
     </div>

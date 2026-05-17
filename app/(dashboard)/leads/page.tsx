@@ -23,7 +23,7 @@ export default async function LeadsPage({ searchParams }: PageProps) {
   const leads = await getLeads(clinicId, { search, status })
 
   return (
-    <div className="space-y-5 max-w-5xl">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-white">Pipeline</h2>

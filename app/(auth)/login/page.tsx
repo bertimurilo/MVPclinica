@@ -65,7 +65,7 @@ export default function LoginPage() {
                 onChange={e => setEmail(e.target.value)}
                 required
                 placeholder="hola@clinica.com"
-                className="w-full bg-gray-950 border border-gray-700 text-white rounded-lg px-3.5 py-2.5 text-sm placeholder:text-gray-600 outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 transition-all"
+                className="w-full bg-gray-950 border border-gray-700 text-white rounded-lg px-3.5 py-2.5 text-sm placeholder:text-gray-600 outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 transition-all"
               />
             </div>
 
@@ -78,14 +78,14 @@ export default function LoginPage() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
-                className="w-full bg-gray-950 border border-gray-700 text-white rounded-lg px-3.5 py-2.5 text-sm placeholder:text-gray-600 outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 transition-all"
+                className="w-full bg-gray-950 border border-gray-700 text-white rounded-lg px-3.5 py-2.5 text-sm placeholder:text-gray-600 outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 transition-all"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 mt-1"
+              className="w-full bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 mt-1"
             >
               {loading && (
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -97,7 +97,7 @@ export default function LoginPage() {
 
           <p className="text-center text-xs text-gray-600 mt-5">
             ¿No tienes cuenta?{' '}
-            <Link href="/register" className="text-emerald-400 hover:text-emerald-300 transition-colors">
+            <Link href="/register" className="text-violet-400 hover:text-violet-300 transition-colors">
               Regístrate
             </Link>
           </p>

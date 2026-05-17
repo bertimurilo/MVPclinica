@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: 'Dashboard' }
 const QUALIF_COLOR: Record<string, string> = {
   frio:     'text-blue-400',
   tibio:    'text-amber-400',
-  caliente: 'text-emerald-500',
+  caliente: 'text-emerald-400',
 }
 
 const QUALIF_LABEL: Record<string, string> = {
@@ -22,7 +22,7 @@ const QUALIF_LABEL: Record<string, string> = {
 const DIST_CONFIG = [
   { key: 'nuevo',         label: 'Nuevos',        color: 'bg-blue-500' },
   { key: 'contactado',    label: 'Contactados',   color: 'bg-amber-500' },
-  { key: 'cita_agendada', label: 'Cita agendada', color: 'bg-emerald-500' },
+  { key: 'cita_agendada', label: 'Cita agendada', color: 'bg-violet-500' },
   { key: 'convertido',    label: 'Convertidos',   color: 'bg-emerald-500' },
   { key: 'perdido',       label: 'Perdidos',      color: 'bg-gray-600' },
 ]
@@ -46,7 +46,7 @@ export default async function DashboardPage() {
   const totalLeads = Object.values(distribution).reduce((a, b) => a + b, 0)
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-6">
       <div>
         <h2 className="text-lg font-semibold text-white">Resumen</h2>
         <p className="text-sm text-gray-500 mt-0.5">Aquí tienes el resumen de hoy</p>
@@ -64,7 +64,7 @@ export default async function DashboardPage() {
           }
           trend={leadsHoyDelta > 0 ? 'up' : leadsHoyDelta < 0 ? 'down' : 'neutral'}
           icon={
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
@@ -78,7 +78,7 @@ export default async function DashboardPage() {
           change="en seguimiento"
           trend="neutral"
           icon={
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
             </svg>
           }
@@ -93,7 +93,7 @@ export default async function DashboardPage() {
           }
           trend={citasDelta > 0 ? 'up' : citasDelta < 0 ? 'down' : 'neutral'}
           icon={
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2" />
               <line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
@@ -106,7 +106,7 @@ export default async function DashboardPage() {
           change="últimos 30 días"
           trend="neutral"
           icon={
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="1" x2="12" y2="23" />
               <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
             </svg>
@@ -118,10 +118,13 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
 
         {/* Recent leads */}
-        <div className="lg:col-span-3 rounded-xl overflow-hidden" style={{ background: '#111827', border: '1px solid #1f2937' }}>
-          <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #1f2937' }}>
+        <div
+          className="lg:col-span-3 rounded-xl overflow-hidden"
+          style={{ background: '#0e1628', border: '1px solid rgba(255,255,255,0.07)' }}
+        >
+          <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <h3 className="text-sm font-semibold text-white">Leads recientes</h3>
-            <Link href="/leads" className="text-xs text-emerald-500 hover:text-purple-400 transition-colors">
+            <Link href="/leads" className="text-xs text-violet-400 hover:text-violet-300 transition-colors">
               Ver todos →
             </Link>
           </div>
@@ -134,7 +137,7 @@ export default async function DashboardPage() {
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-800">
+            <div style={{ borderTop: '0' }}>
               {recentLeads.map((lead) => {
                 const l = lead as {
                   id: string
@@ -149,9 +152,13 @@ export default async function DashboardPage() {
                   <Link
                     key={l.id}
                     href={`/leads/${l.id}`}
-                    className="px-5 py-3.5 flex items-center gap-4 hover:bg-white/5 transition-colors block"
+                    className="px-5 py-3.5 flex items-center gap-4 hover:bg-white/[0.03] transition-colors block"
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
                   >
-                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-xs font-bold text-emerald-500 shrink-0">
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                      style={{ background: 'rgba(124,58,237,0.18)', border: '1px solid rgba(124,58,237,0.30)', color: '#a78bfa' }}
+                    >
                       {initial}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -183,25 +190,28 @@ export default async function DashboardPage() {
         </div>
 
         {/* Status distribution */}
-        <div className="lg:col-span-2 rounded-xl p-5" style={{ background: '#111827', border: '1px solid #1f2937' }}>
+        <div
+          className="lg:col-span-2 rounded-xl p-5"
+          style={{ background: '#0e1628', border: '1px solid rgba(255,255,255,0.07)' }}
+        >
           <h3 className="text-sm font-semibold text-white mb-4">Distribución de leads</h3>
 
           {totalLeads === 0 ? (
             <p className="text-sm text-gray-600 text-center py-8">Sin datos todavía</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               {DIST_CONFIG.map(item => {
                 const count = distribution[item.key] ?? 0
                 const pct = totalLeads > 0 ? Math.round((count / totalLeads) * 100) : 0
                 return (
                   <div key={item.key}>
-                    <div className="flex items-center justify-between text-xs mb-1">
+                    <div className="flex items-center justify-between text-xs mb-1.5">
                       <span className="text-gray-400">{item.label}</span>
-                      <span className="text-gray-500">{count}</span>
+                      <span className="text-gray-500 tabular-nums">{count}</span>
                     </div>
-                    <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
                       <div
-                        className={`h-full ${item.color} rounded-full transition-all`}
+                        className={`h-full ${item.color} rounded-full transition-all duration-500`}
                         style={{ width: `${pct}%` }}
                       />
                     </div>

@@ -26,7 +26,7 @@ export function WhatsAppTab({ connected, phoneWhatsapp }: Props) {
           <h3 className="text-sm font-semibold text-white">Conexión WhatsApp · Z-API</h3>
         </div>
         <div className="p-5 space-y-5">
-          {/* Status banner */}
+          {/* Status banner — keep green for connected (semantic) */}
           <div className={`flex items-center gap-3 p-4 rounded-lg border ${
             isConnected
               ? 'bg-emerald-500/5 border-emerald-500/20'
@@ -67,7 +67,7 @@ export function WhatsAppTab({ connected, phoneWhatsapp }: Props) {
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 ${
               isConnected
                 ? 'bg-gray-700 hover:bg-gray-600 text-white border border-gray-600'
-                : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                : 'bg-violet-600 hover:bg-violet-700 text-white'
             }`}
           >
             {isPending && (

@@ -66,7 +66,7 @@ export default async function SettingsPage({ searchParams }: PageProps) {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6">
       <div>
         <h2 className="text-lg font-semibold text-white">Ajustes</h2>
         <p className="text-sm text-gray-500 mt-0.5">Configura tu clínica y el agente IA</p>

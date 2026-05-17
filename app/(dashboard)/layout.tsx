@@ -36,13 +36,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#030712' }}>
-      {/* Green ambient glow — matches landing */}
+      {/* Violet ambient glow */}
       <div
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background: `
-            radial-gradient(60% 50% at 80% 0%, rgba(16,185,129,0.12), transparent 60%),
-            radial-gradient(50% 40% at 10% 30%, rgba(5,150,105,0.06), transparent 60%)
+            radial-gradient(60% 50% at 75% 0%, rgba(124,58,237,0.09), transparent 60%),
+            radial-gradient(40% 35% at 5% 50%, rgba(109,40,217,0.05), transparent 60%)
           `,
         }}
       />

@@ -21,10 +21,12 @@ export function Input({ label, error, hint, className, id, ...props }: InputProp
         {...props}
         id={inputId}
         className={cn(
-          'w-full bg-gray-900 border border-gray-700 text-white rounded-lg px-3.5 py-2.5 text-sm',
+          'w-full bg-white/5 border text-white rounded-lg px-3.5 py-2.5 text-sm',
           'placeholder:text-gray-600 outline-none transition-all',
-          'focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500',
-          error && 'border-red-500/60 focus:ring-red-500/30 focus:border-red-500',
+          'focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500/60',
+          error
+            ? 'border-red-500/60 focus:ring-red-500/30 focus:border-red-500'
+            : 'border-white/10',
           className
         )}
       />
@@ -53,10 +55,10 @@ export function Textarea({ label, error, className, id, ...props }: TextareaProp
         {...props}
         id={inputId}
         className={cn(
-          'w-full bg-gray-900 border border-gray-700 text-white rounded-lg px-3.5 py-2.5 text-sm',
+          'w-full bg-white/5 border text-white rounded-lg px-3.5 py-2.5 text-sm',
           'placeholder:text-gray-600 outline-none transition-all resize-none',
-          'focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500',
-          error && 'border-red-500/60',
+          'focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500/60',
+          error ? 'border-red-500/60' : 'border-white/10',
           className
         )}
       />

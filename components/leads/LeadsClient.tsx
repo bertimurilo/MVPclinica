@@ -16,16 +16,16 @@ const FILTER_TABS = [
 const STATUS_MAP: Record<LeadStatus, { label: string; cls: string }> = {
   nuevo:         { label: 'Nuevo',         cls: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
   contactado:    { label: 'Contactado',    cls: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
-  cita_agendada: { label: 'Cita agendada', cls: 'bg-emerald-500/10 text-purple-400 border-emerald-500/20' },
+  cita_agendada: { label: 'Cita agendada', cls: 'bg-violet-500/10 text-violet-400 border-violet-500/20' },
   convertido:    { label: 'Convertido',    cls: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
-  inactivo:      { label: 'Inactivo',      cls: 'bg-gray-700/50 text-gray-500 border-gray-700' },
+  inactivo:      { label: 'Inactivo',      cls: 'bg-white/5 text-gray-500 border-white/10' },
   perdido:       { label: 'Perdido',       cls: 'bg-red-500/10 text-red-400 border-red-500/20' },
 }
 
 const QUALIF_MAP: Record<LeadQualification, { label: string; cls: string }> = {
   frio:     { label: 'Frío',     cls: 'text-blue-400' },
   tibio:    { label: 'Tibio',    cls: 'text-amber-400' },
-  caliente: { label: 'Caliente', cls: 'text-emerald-500' },
+  caliente: { label: 'Caliente', cls: 'text-orange-400' },
 }
 
 interface LeadsClientProps {
@@ -73,7 +73,8 @@ export function LeadsClient({ leads, currentSearch, currentStatus }: LeadsClient
         value={search}
         onChange={e => setSearch(e.target.value)}
         placeholder="Buscar por nombre o teléfono..."
-        className="w-full bg-gray-900 border border-gray-700 text-white rounded-lg px-4 py-2.5 text-sm placeholder:text-gray-600 outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all"
+        className="w-full text-white rounded-lg px-4 py-2.5 text-sm placeholder:text-gray-600 outline-none transition-all focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500/60"
+        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}
       />
 
       {/* Filter tabs */}
@@ -84,8 +85,8 @@ export function LeadsClient({ leads, currentSearch, currentStatus }: LeadsClient
             onClick={() => setStatus(tab.key)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all border ${
               activeStatus === tab.key
-                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800 border-transparent'
+                ? 'bg-violet-500/12 text-violet-400 border-violet-500/25'
+                : 'text-gray-500 hover:text-gray-300 border-transparent hover:bg-white/5'
             }`}
           >
             {tab.label}
@@ -97,10 +98,13 @@ export function LeadsClient({ leads, currentSearch, currentStatus }: LeadsClient
       {leads.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className={`bg-gray-800 border border-gray-700 rounded-xl overflow-hidden transition-opacity ${isPending ? 'opacity-60' : ''}`}>
+        <div
+          className={`rounded-xl overflow-hidden transition-opacity ${isPending ? 'opacity-60' : ''}`}
+          style={{ background: '#0e1628', border: '1px solid rgba(255,255,255,0.07)' }}
+        >
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-700">
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contacto</th>
                 <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Tratamiento</th>
                 <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
@@ -108,7 +112,7 @@ export function LeadsClient({ leads, currentSearch, currentStatus }: LeadsClient
                 <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Último contacto</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700">
+            <tbody>
               {leads.map(lead => {
                 const status = STATUS_MAP[lead.status] ?? STATUS_MAP.inactivo
                 const qualif = QUALIF_MAP[lead.qualification] ?? QUALIF_MAP.frio
@@ -118,11 +122,15 @@ export function LeadsClient({ leads, currentSearch, currentStatus }: LeadsClient
                   <tr
                     key={lead.id}
                     onClick={() => router.push(`/leads/${lead.id}`)}
-                    className="hover:bg-gray-700/50 transition-colors cursor-pointer"
+                    className="hover:bg-white/[0.025] transition-colors cursor-pointer"
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
                   >
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-xs font-bold text-emerald-500 shrink-0">
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                          style={{ background: 'rgba(124,58,237,0.18)', border: '1px solid rgba(124,58,237,0.28)', color: '#a78bfa' }}
+                        >
                           {initial}
                         </div>
                         <div className="min-w-0">
@@ -143,10 +151,13 @@ export function LeadsClient({ leads, currentSearch, currentStatus }: LeadsClient
                     </td>
                     <td className="px-5 py-3.5 hidden lg:table-cell">
                       <div className="flex items-center gap-2">
-                        <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden" style={{ width: 56 }}>
-                          <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${lead.score}%` }} />
+                        <div className="h-1.5 rounded-full overflow-hidden" style={{ width: 56, background: 'rgba(255,255,255,0.07)' }}>
+                          <div
+                            className="h-full bg-violet-500 rounded-full"
+                            style={{ width: `${lead.score}%` }}
+                          />
                         </div>
-                        <span className="text-xs text-gray-500 w-6">{lead.score}</span>
+                        <span className="text-xs text-gray-500 w-6 tabular-nums">{lead.score}</span>
                       </div>
                     </td>
                     <td className="px-5 py-3.5 hidden sm:table-cell">
@@ -170,8 +181,14 @@ export function LeadsClient({ leads, currentSearch, currentStatus }: LeadsClient
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center py-20 text-center bg-gray-800 border border-gray-700 rounded-xl">
-      <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center mb-4">
+    <div
+      className="flex flex-col items-center justify-center py-20 text-center rounded-xl"
+      style={{ background: '#0e1628', border: '1px solid rgba(255,255,255,0.07)' }}
+    >
+      <div
+        className="w-12 h-12 rounded-full flex items-center justify-center mb-4"
+        style={{ background: 'rgba(255,255,255,0.05)' }}
+      >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600">
           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
           <circle cx="9" cy="7" r="4" />
