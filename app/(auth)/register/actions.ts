@@ -7,41 +7,46 @@ export async function createClinicAndUser(
   email: string,
   clinicName: string
 ) {
-  const supabase = createServiceClient()
+  try {
+    const supabase = createServiceClient()
 
-  const slug =
-    clinicName
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[̀-ͯ]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '') +
-    '-' +
-    Date.now()
+    const slug =
+      clinicName
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '') +
+      '-' +
+      Date.now()
 
-  const { data: clinic, error: clinicError } = await supabase
-    .from('clinics')
-    .insert({ name: clinicName, slug, email })
-    .select('id')
-    .single()
+    const { data: clinic, error: clinicError } = await supabase
+      .from('clinics')
+      .insert({ name: clinicName, slug, email })
+      .select('id')
+      .single()
 
-  if (clinicError || !clinic) {
-    return { error: clinicError?.message ?? 'Error al crear la clínica' }
+    if (clinicError || !clinic) {
+      return { error: clinicError?.message ?? 'Error al crear la clínica' }
+    }
+
+    const { error: userError } = await supabase
+      .from('users')
+      .insert({
+        id: userId,
+        clinic_id: clinic.id,
+        email,
+        name: clinicName,
+        role: 'admin',
+      })
+
+    if (userError) {
+      return { error: userError.message }
+    }
+
+    return { clinicId: clinic.id }
+  } catch (err) {
+    console.error('[register] createClinicAndUser error:', err)
+    return { error: err instanceof Error ? err.message : 'Error inesperado al crear la cuenta' }
   }
-
-  const { error: userError } = await supabase
-    .from('users')
-    .insert({
-      id: userId,
-      clinic_id: clinic.id,
-      email,
-      name: clinicName,
-      role: 'admin',
-    })
-
-  if (userError) {
-    return { error: userError.message }
-  }
-
-  return { clinicId: clinic.id }
 }
