@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { rateLimit } from '@/lib/rateLimit'
 
 export async function GET(req: NextRequest) {
   try {
-    const supabase = createServiceClient()
     const { searchParams } = req.nextUrl
 
     const clinicId = searchParams.get('clinic_id')
@@ -14,11 +14,37 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'clinic_id required' }, { status: 400 })
     }
 
+    const supabaseAuth = createClient()
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const rl = rateLimit(user.id, 'leads-api', { interval: 60 * 1000, limit: 60 })
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Demasiadas peticiones.' },
+        { status: 429 }
+      )
+    }
+
+    const { data: userRow } = await supabaseAuth
+      .from('users')
+      .select('clinic_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!userRow || userRow.clinic_id !== clinicId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const supabase = createServiceClient()
+
     let query = supabase
       .from('leads')
       .select('*')
       .eq('clinic_id', clinicId)
-      .order('last_contact_at', { ascending: false })
+      .order('last_message_at', { ascending: false })
       .limit(limit)
 
     if (status) {
@@ -38,12 +64,39 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createServiceClient()
     const body = await req.json() as Record<string, unknown>
 
     if (!body.clinic_id || !body.phone) {
       return NextResponse.json({ error: 'clinic_id and phone are required' }, { status: 400 })
     }
+
+    const clinicId = body.clinic_id as string
+
+    const supabaseAuth = createClient()
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const rl = rateLimit(user.id, 'leads-api', { interval: 60 * 1000, limit: 60 })
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Demasiadas peticiones.' },
+        { status: 429 }
+      )
+    }
+
+    const { data: userRow } = await supabaseAuth
+      .from('users')
+      .select('clinic_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!userRow || userRow.clinic_id !== clinicId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const supabase = createServiceClient()
 
     const { data, error } = await supabase
       .from('leads')
@@ -52,8 +105,8 @@ export async function POST(req: NextRequest) {
         phone:     body.phone,
         name:      body.name ?? null,
         channel:   body.channel ?? 'web',
-        status:    'new',
-        score:     'cold',
+        status:    'nuevo',
+        score:     0,
       })
       .select()
       .single()

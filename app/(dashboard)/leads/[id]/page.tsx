@@ -3,7 +3,9 @@ import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getCurrentClinicId, getLead } from '@/lib/actions'
 import { LeadSidebarActions } from '@/components/leads/LeadSidebarActions'
+import { LeadNameEditor } from '@/components/leads/LeadNameEditor'
 import { ConversationPanel } from '@/components/leads/ConversationPanel'
+import { AppointmentPanel } from '@/components/leads/AppointmentPanel'
 import { formatDate, formatRelativeTime } from '@/lib/utils'
 import type { LeadQualification } from '@/lib/types'
 
@@ -55,7 +57,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
                 {initial}
               </div>
               <div className="min-w-0">
-                <p className="font-semibold text-white truncate">{lead.name ?? 'Sin nombre'}</p>
+                <LeadNameEditor leadId={lead.id} initialName={lead.name ?? null} />
                 <p className="text-sm text-gray-500">{lead.phone}</p>
               </div>
             </div>
@@ -112,6 +114,11 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
               notes={lead.notes}
             />
           </div>
+
+          <AppointmentPanel
+            appointments={lead.appointments ?? []}
+            clinicId={clinicId}
+          />
         </div>
 
         {/* Right panel — conversation */}

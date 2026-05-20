@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import VenuIcon from '@/components/ui/VenuIcon'
-import { createClinicAndUser } from './actions'
 
 export default function RegisterPage() {
   const [email, setEmail]           = useState('')
@@ -34,16 +33,25 @@ export default function RegisterPage() {
         return
       }
 
-      if (authData.user) {
-        const result = await createClinicAndUser(authData.user.id, email, clinicName)
-        if (result.error) {
-          setError(result.error)
-          setLoading(false)
-          return
-        }
+      if (!authData.user) {
+        setError('No se pudo crear el usuario. Inténtalo de nuevo.')
+        setLoading(false)
+        return
       }
 
-      router.push('/dashboard')
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: authData.user.id, email, clinicName }),
+      })
+      const result = await res.json()
+      if (!res.ok) {
+        setError(result.error ?? 'Error al configurar la cuenta')
+        setLoading(false)
+        return
+      }
+
+      router.push('/onboarding')
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error inesperado. Inténtalo de nuevo.')

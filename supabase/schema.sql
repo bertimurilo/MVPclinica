@@ -19,7 +19,7 @@ CREATE TABLE clinics (
   stripe_customer_id TEXT,
   stripe_subscription_id TEXT,
   plan TEXT DEFAULT 'starter' CHECK (plan IN ('starter', 'pro', 'enterprise')),
-  active BOOLEAN DEFAULT true,
+  active BOOLEAN DEFAULT false,
   trial_ends_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
@@ -59,6 +59,7 @@ CREATE TABLE agent_config (
   out_of_hours_message TEXT DEFAULT 'Gracias por escribirnos. Ahora mismo estamos fuera de horario. Te responderemos manana a primera hora.',
   escalation_rules JSONB DEFAULT '{"unknown_question": true, "surgery_mention": true, "complaint": true}',
   business_hours JSONB DEFAULT '{"monday": {"open": "09:00", "close": "20:00"}, "tuesday": {"open": "09:00", "close": "20:00"}, "wednesday": {"open": "09:00", "close": "20:00"}, "thursday": {"open": "09:00", "close": "20:00"}, "friday": {"open": "09:00", "close": "20:00"}, "saturday": null, "sunday": null}',
+  agent_name TEXT DEFAULT 'Sara',
   max_auto_messages INT DEFAULT 10,
   custom_instructions TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
@@ -80,6 +81,8 @@ CREATE TABLE leads (
   notes TEXT,
   last_message_at TIMESTAMPTZ,
   escalated BOOLEAN DEFAULT false,
+  conversation_stage TEXT DEFAULT 'welcome' CHECK (conversation_stage IN ('welcome', 'discovery', 'presentation', 'pricing', 'confirmed', 'escalated')),
+  objection_count INT DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now(),
   UNIQUE(clinic_id, phone)
@@ -95,6 +98,8 @@ CREATE TABLE messages (
   sender TEXT NOT NULL CHECK (sender IN ('client', 'agent', 'human')),
   message_type TEXT DEFAULT 'text' CHECK (message_type IN ('text', 'image', 'audio', 'document', 'sticker')),
   z_api_message_id TEXT,
+  response_time_seconds INTEGER,
+  out_of_hours BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -108,6 +113,8 @@ CREATE TABLE appointments (
   status TEXT DEFAULT 'agendada' CHECK (status IN ('agendada', 'confirmada', 'completada', 'cancelada', 'no_show')),
   notes TEXT,
   reported_to_stripe BOOLEAN DEFAULT false,
+  proposed_by TEXT CHECK (proposed_by IN ('agent', 'human', 'client')),
+  requires_human_confirmation BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -147,8 +154,46 @@ ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usage_events ENABLE ROW LEVEL SECURITY;
 
--- Policies: cada usuario solo ve datos de su clinica
--- (las policies exactas dependen del metodo de auth que uses)
+-- Helper: devuelve el clinic_id del usuario autenticado (SECURITY DEFINER evita recursion)
+CREATE OR REPLACE FUNCTION public.get_my_clinic_id()
+RETURNS UUID AS $$
+  SELECT clinic_id FROM public.users WHERE id = auth.uid()
+$$ LANGUAGE SQL SECURITY DEFINER STABLE;
+
+-- USERS: cada usuario ve y edita solo su propio registro
+CREATE POLICY "users_own" ON users
+  FOR ALL USING (id = auth.uid());
+
+-- CLINICS: el usuario ve/edita solo la clínica a la que pertenece
+CREATE POLICY "clinics_select_own" ON clinics
+  FOR SELECT USING (id = public.get_my_clinic_id());
+
+CREATE POLICY "clinics_update_own" ON clinics
+  FOR UPDATE USING (id = public.get_my_clinic_id());
+
+-- TREATMENTS: CRUD completo dentro de la clínica propia
+CREATE POLICY "treatments_own_clinic" ON treatments
+  FOR ALL USING (clinic_id = public.get_my_clinic_id());
+
+-- AGENT_CONFIG: CRUD completo dentro de la clínica propia
+CREATE POLICY "agent_config_own_clinic" ON agent_config
+  FOR ALL USING (clinic_id = public.get_my_clinic_id());
+
+-- LEADS: CRUD completo dentro de la clínica propia
+CREATE POLICY "leads_own_clinic" ON leads
+  FOR ALL USING (clinic_id = public.get_my_clinic_id());
+
+-- MESSAGES: CRUD completo dentro de la clínica propia
+CREATE POLICY "messages_own_clinic" ON messages
+  FOR ALL USING (clinic_id = public.get_my_clinic_id());
+
+-- APPOINTMENTS: CRUD completo dentro de la clínica propia
+CREATE POLICY "appointments_own_clinic" ON appointments
+  FOR ALL USING (clinic_id = public.get_my_clinic_id());
+
+-- USAGE_EVENTS: solo lectura para el dashboard
+CREATE POLICY "usage_events_own_clinic" ON usage_events
+  FOR SELECT USING (clinic_id = public.get_my_clinic_id());
 
 -- ============================================================================
 -- FUNCIONES HELPER

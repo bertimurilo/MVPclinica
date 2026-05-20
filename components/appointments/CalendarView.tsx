@@ -29,8 +29,8 @@ type Props = {
 
 const STATUS_PILL: Record<AppointmentStatus, string> = {
   agendada:   'bg-amber-500/20 text-amber-300 border border-amber-500/30',
-  confirmada: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
-  completada: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
+  confirmada: 'bg-violet-500/20 text-violet-300 border border-violet-500/30',
+  completada: 'bg-violet-500/10 text-violet-400 border border-violet-500/20',
   cancelada:  'bg-red-500/20 text-red-400 border border-red-500/30',
   no_show:    'bg-red-500/20 text-red-400 border border-red-500/30',
 }
@@ -161,13 +161,13 @@ export function CalendarView({ appointments, month, year }: Props) {
                   onClick={() => cell.currentMonth && setSelectedDay(cell.day === selectedDay ? null : cell.day)}
                   className={`min-h-[90px] p-2 border-b border-r border-gray-700/50 text-left transition-colors ${
                     !cell.currentMonth ? 'opacity-30 cursor-default' :
-                    isSelected ? 'bg-emerald-500/10' :
+                    isSelected ? 'bg-violet-500/10' :
                     'hover:bg-gray-700/40 cursor-pointer'
                   }`}
                 >
                   <span className={`inline-flex w-6 h-6 items-center justify-center rounded-full text-xs font-medium mb-1.5 ${
                     isToday(cell.day) && cell.currentMonth
-                      ? 'bg-emerald-500 text-white'
+                      ? 'bg-violet-500 text-white'
                       : cell.currentMonth
                         ? 'text-gray-300'
                         : 'text-gray-600'
@@ -263,7 +263,7 @@ export function CalendarView({ appointments, month, year }: Props) {
                           className={`text-xs px-2.5 py-1 rounded-lg border transition-colors disabled:opacity-40 ${
                             sa.status === 'cancelada' || sa.status === 'no_show'
                               ? 'border-gray-700 text-gray-400 hover:border-red-500/40 hover:text-red-400'
-                              : 'border-gray-700 text-gray-400 hover:border-emerald-500/40 hover:text-emerald-400'
+                              : 'border-gray-700 text-gray-400 hover:border-violet-500/40 hover:text-violet-400'
                           }`}
                         >
                           {sa.label}

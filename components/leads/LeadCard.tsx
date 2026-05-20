@@ -1,4 +1,4 @@
-import type { Lead } from '@/types'
+import type { Lead } from '@/lib/types'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { LeadStatusBadge } from './LeadStatusBadge'
@@ -9,22 +9,30 @@ interface LeadCardProps {
   onClick?: () => void
 }
 
-const scoreConfig = {
-  cold: { label: 'Frío',      variant: 'blue'   as const },
-  warm: { label: 'Tibio',     variant: 'yellow' as const },
-  hot:  { label: 'Caliente',  variant: 'red'    as const },
+// score es number 0-100 → mapeamos a tramos
+function getScoreTier(score: number): 'frio' | 'tibio' | 'caliente' {
+  if (score >= 70) return 'caliente'
+  if (score >= 40) return 'tibio'
+  return 'frio'
 }
 
-const channelConfig = {
-  whatsapp: { label: 'WhatsApp',  variant: 'emerald' as const },
-  instagram:{ label: 'Instagram', variant: 'purple'  as const },
-  web:      { label: 'Web',       variant: 'gray'    as const },
+const scoreConfig = {
+  frio:     { label: 'Frío',      variant: 'blue'   as const },
+  tibio:    { label: 'Tibio',     variant: 'yellow' as const },
+  caliente: { label: 'Caliente',  variant: 'red'    as const },
+}
+
+const sourceConfig: Record<string, { label: string; variant: 'violet' | 'purple' | 'gray' }> = {
+  whatsapp:  { label: 'WhatsApp',  variant: 'violet' },
+  instagram: { label: 'Instagram', variant: 'purple' },
+  web:       { label: 'Web',       variant: 'gray'   },
 }
 
 export function LeadCard({ lead, onClick }: LeadCardProps) {
-  const score   = scoreConfig[lead.score]
-  const channel = channelConfig[lead.channel]
-  const initials = (lead.name ?? lead.phone).charAt(0).toUpperCase()
+  const scoreTier = getScoreTier(lead.score)
+  const score     = scoreConfig[scoreTier]
+  const source    = sourceConfig[lead.source] ?? { label: lead.source, variant: 'gray' as const }
+  const initials  = (lead.name ?? lead.phone).charAt(0).toUpperCase()
 
   return (
     <Card hover onClick={onClick} className="p-5">
@@ -45,10 +53,10 @@ export function LeadCard({ lead, onClick }: LeadCardProps) {
 
       <div className="flex items-center gap-2 mt-3.5 flex-wrap">
         <Badge variant={score.variant}>{score.label}</Badge>
-        <Badge variant={channel.variant}>{channel.label}</Badge>
-        {lead.last_contact_at && (
+        <Badge variant={source.variant}>{source.label}</Badge>
+        {lead.last_message_at && (
           <span className="text-xs text-gray-600 ml-auto">
-            {formatRelativeTime(lead.last_contact_at)}
+            {formatRelativeTime(lead.last_message_at)}
           </span>
         )}
       </div>

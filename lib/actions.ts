@@ -1,9 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { sendMessage } from '@/lib/zapi'
-import type { Lead, LeadStatus, Message } from '@/lib/types'
+import type { Appointment, Lead, LeadStatus, Message } from '@/lib/types'
 
 // ─── Auth helper ─────────────────────────────────────────────────────────────
 
@@ -166,6 +166,17 @@ export async function getLead(
   }
 }
 
+export async function updateLeadName(leadId: string, name: string) {
+  const supabase = createServiceClient()
+  const { error } = await supabase
+    .from('leads')
+    .update({ name: name.trim() })
+    .eq('id', leadId)
+  if (error) throw new Error(error.message)
+  revalidatePath('/leads')
+  revalidatePath(`/leads/${leadId}`)
+}
+
 export async function updateLeadStatus(leadId: string, clinicId: string, status: LeadStatus) {
   const supabase = createClient()
   const { error } = await supabase
@@ -247,7 +258,58 @@ export async function sendHumanMessage(leadId: string, clinicId: string, content
   return { success: true }
 }
 
+// ─── WhatsApp / Z-API ────────────────────────────────────────────────────────
+
+export async function saveZApiCredentials(formData: {
+  clinicId: string
+  instanceId: string
+  token: string
+  phoneWhatsapp: string
+}) {
+  const supabase = createClient()
+  const clinicId = await getCurrentClinicId()
+  const { error } = await supabase
+    .from('clinics')
+    .update({
+      z_api_instance_id: formData.instanceId.trim(),
+      z_api_token:       formData.token.trim(),
+      phone_whatsapp:    formData.phoneWhatsapp.trim(),
+      z_api_connected:   false,
+      updated_at:        new Date().toISOString(),
+    })
+    .eq('id', clinicId)
+  if (error) throw new Error(error.message)
+  revalidatePath('/settings')
+}
+
+export async function updateWhatsAppStatus(connected: boolean) {
+  const supabase = createClient()
+  const clinicId = await getCurrentClinicId()
+  const { error } = await supabase
+    .from('clinics')
+    .update({ z_api_connected: connected, updated_at: new Date().toISOString() })
+    .eq('id', clinicId)
+  if (error) return { error: error.message }
+  revalidatePath('/settings')
+  return { success: true }
+}
+
 // ─── Appointments ─────────────────────────────────────────────────────────────
+
+export async function updateAppointmentStatus(
+  appointmentId: string,
+  clinicId: string,
+  status: 'confirmada' | 'cancelada'
+) {
+  const supabase = createServiceClient()
+  const { error } = await supabase
+    .from('appointments')
+    .update({ status })
+    .eq('id', appointmentId)
+    .eq('clinic_id', clinicId)
+  if (error) throw new Error(error.message)
+  revalidatePath('/leads')
+}
 
 export async function getAppointmentsByMonth(clinicId: string, year: number, month: number) {
   const supabase = createClient()
@@ -263,4 +325,48 @@ export async function getAppointmentsByMonth(clinicId: string, year: number, mon
     .order('appointment_date')
 
   return data ?? []
+}
+
+export async function getEstimatedRevenue(clinicId: string) {
+  const supabase = createServiceClient()
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('treatments(price)')
+    .eq('clinic_id', clinicId)
+    .in('status', ['confirmada', 'completada'])
+    .gte('created_at', thirtyDaysAgo.toISOString())
+
+  if (error) return { total: 0, count: 0 }
+  const total = (data ?? []).reduce((sum, a) => {
+    const price = (a.treatments as { price?: number } | null)?.price ?? 0
+    return sum + price
+  }, 0)
+  return { total, count: data?.length ?? 0 }
+}
+
+export async function getAppointmentsByDay(clinicId: string) {
+  const supabase = createServiceClient()
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('appointment_date')
+    .eq('clinic_id', clinicId)
+    .gte('appointment_date', thirtyDaysAgo.toISOString())
+    .order('appointment_date', { ascending: true })
+
+  if (error || !data) return []
+
+  const grouped: Record<string, number> = {}
+  data.forEach(a => {
+    if (!a.appointment_date) return
+    const day = a.appointment_date.slice(0, 10)
+    grouped[day] = (grouped[day] ?? 0) + 1
+  })
+
+  return Object.entries(grouped).map(([date, count]) => ({ date, count }))
 }

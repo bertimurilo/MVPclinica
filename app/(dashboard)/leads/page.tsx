@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getCurrentClinicId, getLeads } from '@/lib/actions'
 import { LeadsClient } from '@/components/leads/LeadsClient'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export const metadata: Metadata = { title: 'Pipeline' }
 
@@ -31,11 +32,13 @@ export default async function LeadsPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      <LeadsClient
-        leads={leads}
-        currentSearch={search ?? ''}
-        currentStatus={status ?? 'all'}
-      />
+      <ErrorBoundary>
+        <LeadsClient
+          leads={leads}
+          currentSearch={search ?? ''}
+          currentStatus={status ?? 'all'}
+        />
+      </ErrorBoundary>
     </div>
   )
 }

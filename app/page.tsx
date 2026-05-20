@@ -1,12 +1,15 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import './landing.css'
 import VenuIcon from '@/components/ui/VenuIcon'
+import { subscribeToWaitlist } from '@/app/actions/waitlist'
 
 export default function LandingPage() {
-  const [btnText, setBtnText] = useState('Consigue acceso →')
-  const [btnDone, setBtnDone] = useState(false)
+  const [email, setEmail] = useState('')
+  const [formDone, setFormDone] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
   const revealRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -27,15 +30,16 @@ export default function LandingPage() {
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setBtnText('✓ Estás dentro')
-    setBtnDone(true)
-    const form = e.currentTarget
-    const input = form.querySelector('input') as HTMLInputElement
-    if (input) input.value = ''
-    setTimeout(() => {
-      setBtnText('Consigue acceso →')
-      setBtnDone(false)
-    }, 3500)
+    setFormError(null)
+    startTransition(async () => {
+      const result = await subscribeToWaitlist(email)
+      if (result.success) {
+        setFormDone(true)
+        setEmail('')
+      } else {
+        setFormError(result.error ?? 'Error inesperado.')
+      }
+    })
   }
 
   return (
@@ -686,15 +690,40 @@ export default function LandingPage() {
             en <span className="grad">dejar de perder citas.</span>
           </h2>
           <p>Únete a la waitlist. Te avisamos cuando haya plaza. Sin compromiso, sin tarjeta.</p>
-          <form className="waitlist-form" onSubmit={handleSubmit}>
-            <input type="email" placeholder="tu@clinica.com" required aria-label="Email" />
-            <button
-              type="submit"
-              style={btnDone ? { opacity: 0.8 } : undefined}
-            >
-              {btnText}
-            </button>
-          </form>
+          {formDone ? (
+            <p style={{ fontSize: '1.15rem', fontWeight: 600, color: '#7C3AED', marginTop: '1.5rem' }}>
+              ¡Apuntado! Te avisamos en el lanzamiento 🎉
+            </p>
+          ) : (
+            <>
+              <form className="waitlist-form" onSubmit={handleSubmit}>
+                <input
+                  type="email"
+                  placeholder="tu@clinica.com"
+                  required
+                  aria-label="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isPending}
+                />
+                <button type="submit" disabled={isPending} style={isPending ? { opacity: 0.7 } : undefined}>
+                  {isPending ? (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 0.8s linear infinite' }}>
+                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                      </svg>
+                      Guardando…
+                    </span>
+                  ) : 'Consigue acceso →'}
+                </button>
+              </form>
+              {formError && (
+                <p style={{ color: '#dc2626', marginTop: '0.5rem', fontSize: '0.9rem' }}>
+                  {formError}
+                </p>
+              )}
+            </>
+          )}
         </div>
       </section>
 

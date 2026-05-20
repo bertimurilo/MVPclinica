@@ -1,4 +1,4 @@
-import type { Lead } from '@/types'
+import type { Lead } from '@/lib/types'
 import { LeadCard } from './LeadCard'
 
 interface LeadListProps {

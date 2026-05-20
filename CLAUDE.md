@@ -10,7 +10,7 @@ Cliniq AI is a B2B SaaS platform for aesthetic clinics. It provides an AI-powere
 - **UI:** React + Tailwind CSS (no component library — custom components)
 - **Database:** Supabase (PostgreSQL + Realtime + Auth + Edge Functions)
 - **WhatsApp:** Z-API (webhook for incoming messages, REST API for outgoing)
-- **AI:** Anthropic API (Claude Sonnet) for the conversational agent
+- **AI:** OpenAI GPT-4o via `lib/agent.ts` for the conversational agent (migración a Claude Sonnet pendiente para post-MVP)
 - **Payments:** Stripe Billing (subscription + usage-based metering)
 - **Deployment:** Vercel
 
@@ -23,9 +23,9 @@ Each clinic is a tenant. All tables have a `clinic_id` column. Row Level Securit
 1. Client sends WhatsApp message to clinic's number
 2. Z-API sends webhook POST to `/api/webhook/zapi`
 3. Backend creates/finds lead, stores message in `messages` table
-4. Backend calls Supabase Edge Function `generate-response` with lead context
-5. Edge Function builds prompt with clinic's agent_config + treatments + conversation history
-6. Anthropic API generates response
+4. Backend calls `lib/agent.ts` with lead context and conversation history
+5. `lib/agent.ts` builds prompt with clinic's agent_config + treatments
+6. OpenAI GPT-4o generates response (migración a Claude Sonnet pendiente para post-MVP)
 7. Backend sends response via Z-API and stores it in `messages` table
 8. Dashboard updates in realtime via Supabase Realtime
 
@@ -109,7 +109,7 @@ npx supabase db push # Push schema to remote
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
-ANTHROPIC_API_KEY=
+OPENAI_API_KEY=
 Z_API_INSTANCE_ID=
 Z_API_TOKEN=
 Z_API_WEBHOOK_SECRET=

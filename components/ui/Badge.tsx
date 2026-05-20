@@ -1,7 +1,7 @@
 import { type HTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 
-type BadgeVariant = 'emerald' | 'blue' | 'yellow' | 'red' | 'purple' | 'orange' | 'gray'
+type BadgeVariant = 'violet' | 'blue' | 'yellow' | 'red' | 'purple' | 'orange' | 'gray'
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   variant?: BadgeVariant
@@ -9,7 +9,7 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const variants: Record<BadgeVariant, string> = {
-  emerald: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
+  violet: 'bg-violet-500/10 text-violet-400 border border-violet-500/20',
   blue:    'bg-blue-500/10 text-blue-400 border border-blue-500/20',
   yellow:  'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20',
   red:     'bg-red-500/10 text-red-400 border border-red-500/20',
@@ -19,7 +19,7 @@ const variants: Record<BadgeVariant, string> = {
 }
 
 const dotColors: Record<BadgeVariant, string> = {
-  emerald: 'bg-emerald-400',
+  violet: 'bg-violet-400',
   blue:    'bg-blue-400',
   yellow:  'bg-yellow-400',
   red:     'bg-red-400',

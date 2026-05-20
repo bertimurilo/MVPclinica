@@ -77,10 +77,13 @@ export default async function SettingsPage({ searchParams }: PageProps) {
       {tab === 'tratamientos' && <TreatmentsTab treatments={treatments} />}
       {tab === 'agente' && <AgentTab config={agentConfig} />}
       {tab === 'clinica' && <ClinicTab clinic={clinic} />}
-      {tab === 'whatsapp' && (
+      {tab === 'whatsapp' && clinic && (
         <WhatsAppTab
-          connected={clinic?.z_api_connected ?? false}
-          phoneWhatsapp={clinic?.phone_whatsapp}
+          clinicId={clinic.id}
+          instanceId={clinic.z_api_instance_id ?? null}
+          token={clinic.z_api_token ?? null}
+          phoneWhatsapp={clinic.phone_whatsapp ?? null}
+          connected={clinic.z_api_connected}
         />
       )}
     </div>

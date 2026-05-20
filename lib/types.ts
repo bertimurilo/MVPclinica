@@ -50,6 +50,7 @@ export interface Treatment {
 export interface AgentConfig {
   id: string;
   clinic_id: string;
+  agent_name?: string;
   tone: 'profesional' | 'cercano' | 'formal' | 'calido';
   welcome_message: string;
   fallback_message: string;
@@ -69,6 +70,10 @@ export interface EscalationRules {
 
 export type BusinessHours = Record<string, { open: string; close: string } | null>
 
+// --- Conversation stage machine ---
+export type ConversationStage = 'welcome' | 'discovery' | 'presentation' | 'pricing' | 'confirmed' | 'escalated'
+export type ObjectionType = 'price' | 'thinking' | 'competitor' | 'fear' | 'time' | 'doubt'
+
 // --- Lead ---
 export type LeadStatus = 'nuevo' | 'contactado' | 'cita_agendada' | 'convertido' | 'inactivo' | 'perdido';
 export type LeadQualification = 'frio' | 'tibio' | 'caliente';
@@ -87,6 +92,8 @@ export interface Lead {
   notes?: string;
   last_message_at?: string;
   escalated: boolean;
+  conversation_stage?: ConversationStage;
+  objection_count?: number;
   created_at: string;
   updated_at: string;
   // Joined
@@ -188,6 +195,9 @@ export interface AgentAnalysis {
   intent: 'info' | 'pricing' | 'booking' | 'complaint' | 'other';
   qualification: 'frio' | 'tibio' | 'caliente';
   score_delta: number;
+  next_stage: ConversationStage;
+  detected_objection?: ObjectionType | null;
+  client_name?: string | null;
   proposed_appointment?: {
     treatment_name?: string;
     preferred_date_iso?: string;
@@ -196,8 +206,8 @@ export interface AgentAnalysis {
 }
 
 export interface AgentResult {
-  response: string;
+  responses: string[];
   analysis: AgentAnalysis;
   was_sent: boolean;
-  reason_not_sent?: 'max_messages_reached' | 'already_escalated' | 'config_missing' | 'openai_error';
+  reason_not_sent?: 'max_messages_reached' | 'already_escalated' | 'config_missing' | 'openai_error' | 'empty_response';
 }
