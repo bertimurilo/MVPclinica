@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Process asynchronously so Z-API doesn't time out waiting for us
-  void processInbound({ phone, instanceId, messageId, text, contactName })
+  await processInbound({ phone, instanceId, messageId, text, contactName })
 
   return NextResponse.json({ ok: true })
 }
