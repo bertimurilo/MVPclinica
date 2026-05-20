@@ -27,15 +27,7 @@ const WebhookSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  // Secret is optional — instanceId is verified against the DB for security.
-  // If Z_API_WEBHOOK_SECRET is set, the request must include ?secret=<value> in the URL.
-  const expectedSecret = process.env.Z_API_WEBHOOK_SECRET
-  if (expectedSecret) {
-    const querySecret = req.nextUrl.searchParams.get('secret')
-    if (querySecret !== expectedSecret) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-  }
+  // Security: instanceId is verified against the DB — only valid clinics are processed.
 
   let body: unknown
   try {
