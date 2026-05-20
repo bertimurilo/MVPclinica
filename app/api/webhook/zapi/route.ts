@@ -97,7 +97,7 @@ async function processInbound({
       .from('clinics')
       .select('id, name, z_api_instance_id, z_api_token, z_api_client_token')
       .eq('z_api_instance_id', instanceId)
-      .single()
+      .maybeSingle()
 
     if (!clinic) {
       console.warn('[webhook] No clinic found for instanceId:', instanceId)
