@@ -15,7 +15,9 @@ const supabase = createClient(
 
 const WebhookSchema = z.object({
   phone: z.string().min(1),
-  instanceId: z.string().min(1),
+  // Z-API sends "InstanceId" (capital I) — accept both
+  instanceId: z.string().min(1).optional(),
+  InstanceId: z.string().min(1).optional(),
   messageId: z.string().min(1),
   fromMe: z.boolean().default(false),
   type: z.string().optional(),
@@ -24,7 +26,11 @@ const WebhookSchema = z.object({
   }).optional(),
   senderName: z.string().optional(),
   pushName: z.string().optional(),
-})
+  chatName: z.string().optional(),
+}).transform(data => ({
+  ...data,
+  instanceId: data.instanceId ?? data.InstanceId ?? '',
+}))
 
 export async function POST(req: NextRequest) {
   // Security: instanceId is verified against the DB — only valid clinics are processed.
