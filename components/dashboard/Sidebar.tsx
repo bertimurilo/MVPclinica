@@ -85,16 +85,27 @@ export default function Sidebar({ clinicName, leadsCount = 0 }: SidebarProps) {
 
   return (
     <aside
-      className="w-56 shrink-0 h-screen flex flex-col"
-      style={{ background: '#080f1e', borderRight: '1px solid rgba(255,255,255,0.06)' }}
+      className="w-56 shrink-0 h-screen flex flex-col relative"
+      style={{
+        background: 'linear-gradient(180deg, #080f1e 0%, #060c18 100%)',
+        borderRight: '1px solid rgba(255,255,255,0.06)',
+      }}
     >
       {/* Brand */}
-      <div className="px-4 pt-5 pb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-        <div className="flex items-center gap-2.5">
+      <div
+        className="px-4 pt-5 pb-4 relative overflow-hidden"
+        style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+      >
+        {/* Subtle violet glow behind logo */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'radial-gradient(60% 80% at 30% 50%, rgba(124,58,237,0.08), transparent)' }}
+        />
+        <div className="flex items-center gap-2.5 relative">
           <VenuIcon size={28} />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-white leading-none">Venu</p>
-            <p className="text-xs text-gray-500 truncate mt-0.5">{clinicName}</p>
+            <p className="text-sm font-semibold text-white leading-none tracking-[-0.01em]">Venu</p>
+            <p className="text-[11px] text-gray-500 truncate mt-0.5">{clinicName}</p>
           </div>
         </div>
       </div>
@@ -113,21 +124,27 @@ export default function Sidebar({ clinicName, leadsCount = 0 }: SidebarProps) {
                 key={`${item.href}-${i}`}
                 href={item.href}
                 className={cn(
-                  'relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all',
+                  'relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all duration-150',
                   active
-                    ? 'text-violet-300 bg-violet-500/10'
-                    : 'text-gray-500 hover:text-gray-200 hover:bg-white/5'
+                    ? 'text-violet-200 bg-violet-500/[0.13]'
+                    : 'text-gray-500 hover:text-gray-200 hover:bg-white/[0.05]'
                 )}
               >
                 {active && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-violet-500 rounded-r-full" />
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[18px] bg-violet-500 rounded-r-full shadow-[0_0_6px_rgba(124,58,237,0.7)]" />
                 )}
-                <span className={cn('shrink-0 transition-colors', active ? 'text-violet-400' : '')}>
+                <span className={cn('shrink-0 transition-colors', active ? 'text-violet-400' : 'text-gray-600')}>
                   {item.icon}
                 </span>
                 <span className="flex-1">{item.label}</span>
                 {item.badge ? (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-violet-500/15 text-violet-400">
+                  <span
+                    className="text-[10px] font-bold px-1.5 py-0.5 rounded-md"
+                    style={{
+                      background: active ? 'rgba(124,58,237,0.25)' : 'rgba(255,255,255,0.06)',
+                      color: active ? '#c4b5fd' : '#6b7280',
+                    }}
+                  >
                     {item.badge > 999 ? '999+' : item.badge}
                   </span>
                 ) : null}
@@ -171,16 +188,16 @@ export default function Sidebar({ clinicName, leadsCount = 0 }: SidebarProps) {
                 key={href}
                 href={href}
                 className={cn(
-                  'relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all',
+                  'relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all duration-150',
                   active
-                    ? 'text-violet-300 bg-violet-500/10'
-                    : 'text-gray-500 hover:text-gray-200 hover:bg-white/5'
+                    ? 'text-violet-200 bg-violet-500/[0.13]'
+                    : 'text-gray-500 hover:text-gray-200 hover:bg-white/[0.05]'
                 )}
               >
                 {active && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-violet-500 rounded-r-full" />
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[18px] bg-violet-500 rounded-r-full shadow-[0_0_6px_rgba(124,58,237,0.7)]" />
                 )}
-                <span className={cn('shrink-0 transition-colors', active ? 'text-violet-400' : '')}>
+                <span className={cn('shrink-0 transition-colors', active ? 'text-violet-400' : 'text-gray-600')}>
                   {icon}
                 </span>
                 <span className="flex-1">{label}</span>
@@ -194,7 +211,7 @@ export default function Sidebar({ clinicName, leadsCount = 0 }: SidebarProps) {
       <div className="p-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all text-gray-600 hover:text-gray-300 hover:bg-white/5"
+          className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all text-gray-600 hover:text-gray-300 hover:bg-white/[0.05]"
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

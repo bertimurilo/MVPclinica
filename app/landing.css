@@ -264,6 +264,9 @@
   from { opacity: 0; transform: translateY(18px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 
 /* ── Hero demo mockup ─── */
 #landing .demo-wrap {
@@ -1126,3 +1129,103 @@
 /* ── SCROLL REVEAL ────────────────────────────── */
 #landing .reveal { opacity: 0; transform: translateY(22px); transition: opacity .75s ease-out, transform .75s ease-out; }
 #landing .reveal.in { opacity: 1; transform: translateY(0); }
+
+/* ── ENHANCEMENTS ─────────────────────────────── */
+
+/* CTA button shimmer on hover */
+#landing .btn-primary { position: relative; overflow: hidden; }
+#landing .btn-primary::after {
+  content: "";
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  transform: skewX(-20deg);
+  transition: none;
+}
+#landing .btn-primary:hover::after {
+  left: 160%;
+  transition: left 0.45s ease-out;
+}
+
+/* Badge pulse ring */
+#landing .badge { position: relative; }
+#landing .badge::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 999px;
+  border: 1px solid rgba(168,85,247,0.25);
+  animation: badge-pulse 3s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes badge-pulse {
+  0%   { opacity: 0.8; transform: scale(1); }
+  70%  { opacity: 0; transform: scale(1.06); }
+  100% { opacity: 0; transform: scale(1.06); }
+}
+
+/* Stats strip numbers — violet accent on em */
+#landing .stat .n em {
+  background: linear-gradient(135deg, var(--brand-400), var(--brand-300));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Animated spark */
+#landing .spark {
+  animation: spark-grow 2.5s ease-in-out infinite alternate;
+}
+@keyframes spark-grow {
+  from { opacity: 0.7; transform: scaleY(1); }
+  to   { opacity: 1;   transform: scaleY(1.08); }
+}
+
+/* Stronger final CTA glow */
+#landing .final::before {
+  background: radial-gradient(55% 65% at 50% 55%, rgba(124,58,237,0.30), transparent 70%);
+}
+
+/* Enhanced ROI total inner glow */
+#landing .roi-total {
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.12) inset,
+    0 0 0 1px rgba(168,85,247,0.3) inset,
+    0 16px 36px -10px rgba(124,58,237,0.55);
+}
+
+/* Demo frame: more prominent violet glow */
+#landing .demo-frame {
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.04) inset,
+    0 32px 80px -20px rgba(0,0,0,0.75),
+    0 0 90px -10px rgba(124,58,237,0.42);
+}
+
+/* Voice blockquote mark refinement */
+#landing .voice blockquote::before {
+  opacity: 0.35;
+  line-height: 0.4;
+}
+
+/* Price card hover */
+#landing .price-card:hover {
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.06) inset,
+    0 30px 80px -30px rgba(0,0,0,0.7),
+    0 0 80px -10px rgba(124,58,237,0.42);
+  transition: box-shadow 0.4s ease;
+}
+
+/* Step card: active indicator line in ::before */
+#landing .step::after {
+  content: "";
+  position: absolute;
+  bottom: 0; left: 24px; right: 24px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(168,85,247,0.2), transparent);
+  opacity: 0;
+  transition: opacity .3s;
+}
+#landing .step:hover::after { opacity: 1; }
