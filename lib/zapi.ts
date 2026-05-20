@@ -1,10 +1,10 @@
 const BASE_URL = 'https://api.z-api.io'
 
-function getHeaders(): Record<string, string> {
-  const clientToken = process.env.Z_API_CLIENT_TOKEN
+function buildHeaders(clientToken?: string | null): Record<string, string> {
+  const token = clientToken ?? process.env.Z_API_CLIENT_TOKEN
   return {
     'Content-Type': 'application/json',
-    ...(clientToken ? { 'Client-Token': clientToken } : {}),
+    ...(token ? { 'Client-Token': token } : {}),
   }
 }
 
@@ -12,14 +12,15 @@ export async function sendMessage(
   phone: string,
   message: string,
   instanceId: string,
-  token: string
+  token: string,
+  clientToken?: string | null
 ): Promise<boolean> {
   try {
     const res = await fetch(
       `${BASE_URL}/instances/${instanceId}/token/${token}/send-text`,
       {
         method: 'POST',
-        headers: getHeaders(),
+        headers: buildHeaders(clientToken),
         body: JSON.stringify({ phone, message }),
       }
     )

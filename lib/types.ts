@@ -15,6 +15,7 @@ export interface Clinic {
   phone_whatsapp?: string;
   z_api_instance_id?: string;
   z_api_token?: string;
+  z_api_client_token?: string;
   z_api_connected: boolean;
   stripe_customer_id?: string;
   stripe_subscription_id?: string;

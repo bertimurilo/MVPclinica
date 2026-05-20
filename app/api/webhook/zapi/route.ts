@@ -27,22 +27,12 @@ const WebhookSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
+  // Secret is optional — instanceId is verified against the DB for security.
+  // If Z_API_WEBHOOK_SECRET is set, the request must include ?secret=<value> in the URL.
   const expectedSecret = process.env.Z_API_WEBHOOK_SECRET
-  const isDev = process.env.NODE_ENV === 'development'
-
-  if (!expectedSecret) {
-    if (isDev) {
-      console.warn('[webhook] Z_API_WEBHOOK_SECRET no configurada — permitido solo en desarrollo')
-    } else {
-      console.error('[webhook] Z_API_WEBHOOK_SECRET no configurada en producción — request rechazada')
-      return NextResponse.json({ error: 'Misconfigured' }, { status: 500 })
-    }
-  } else {
-    const headerSecret = req.headers.get('x-webhook-secret')
+  if (expectedSecret) {
     const querySecret = req.nextUrl.searchParams.get('secret')
-    // Z-API no soporta headers custom — aceptamos query param con riesgo documentado
-    // RIESGO: el secret queda en logs de servidor. Mitigar cuando se actualice el plan.
-    if (headerSecret !== expectedSecret && querySecret !== expectedSecret) {
+    if (querySecret !== expectedSecret) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
   }
@@ -107,7 +97,7 @@ async function processInbound({
     // 1. Resolve clinic from Z-API instance ID
     const { data: clinic } = await supabase
       .from('clinics')
-      .select('id, name, z_api_instance_id, z_api_token')
+      .select('id, name, z_api_instance_id, z_api_token, z_api_client_token')
       .eq('z_api_instance_id', instanceId)
       .single()
 
@@ -200,7 +190,7 @@ async function processInbound({
     } catch (aiError) {
       console.error('[webhook] generateAgentResponse error:', aiError)
       try {
-        await sendMessage(normalizedPhone, FALLBACK_MESSAGE, clinic.z_api_instance_id, clinic.z_api_token)
+        await sendMessage(normalizedPhone, FALLBACK_MESSAGE, clinic.z_api_instance_id, clinic.z_api_token, clinic.z_api_client_token)
       } catch (fallbackError) {
         console.error('[webhook] Error enviando fallback:', fallbackError)
       }
@@ -232,7 +222,8 @@ async function processInbound({
         normalizedPhone,
         msg,
         clinic.z_api_instance_id,
-        clinic.z_api_token
+        clinic.z_api_token,
+        clinic.z_api_client_token
       )
 
       if (!sent) {

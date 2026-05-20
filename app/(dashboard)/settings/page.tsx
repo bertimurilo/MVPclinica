@@ -82,6 +82,7 @@ export default async function SettingsPage({ searchParams }: PageProps) {
           clinicId={clinic.id}
           instanceId={clinic.z_api_instance_id ?? null}
           token={clinic.z_api_token ?? null}
+          clientToken={clinic.z_api_client_token ?? null}
           phoneWhatsapp={clinic.phone_whatsapp ?? null}
           connected={clinic.z_api_connected}
         />

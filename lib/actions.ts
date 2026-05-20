@@ -264,6 +264,7 @@ export async function saveZApiCredentials(formData: {
   clinicId: string
   instanceId: string
   token: string
+  clientToken: string
   phoneWhatsapp: string
 }) {
   const supabase = createClient()
@@ -271,11 +272,12 @@ export async function saveZApiCredentials(formData: {
   const { error } = await supabase
     .from('clinics')
     .update({
-      z_api_instance_id: formData.instanceId.trim(),
-      z_api_token:       formData.token.trim(),
-      phone_whatsapp:    formData.phoneWhatsapp.trim(),
-      z_api_connected:   false,
-      updated_at:        new Date().toISOString(),
+      z_api_instance_id:   formData.instanceId.trim(),
+      z_api_token:         formData.token.trim(),
+      z_api_client_token:  formData.clientToken.trim() || null,
+      phone_whatsapp:      formData.phoneWhatsapp.trim(),
+      z_api_connected:     false,
+      updated_at:          new Date().toISOString(),
     })
     .eq('id', clinicId)
   if (error) throw new Error(error.message)

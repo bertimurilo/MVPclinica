@@ -15,6 +15,7 @@ CREATE TABLE clinics (
   phone_whatsapp TEXT,
   z_api_instance_id TEXT,
   z_api_token TEXT,
+  z_api_client_token TEXT,
   z_api_connected BOOLEAN DEFAULT false,
   stripe_customer_id TEXT,
   stripe_subscription_id TEXT,

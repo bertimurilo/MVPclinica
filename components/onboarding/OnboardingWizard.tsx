@@ -96,6 +96,7 @@ export function OnboardingWizard({
             clinicId={clinicId}
             instanceId={instanceId}
             token={token}
+            clientToken={null}
             phoneWhatsapp={phoneWhatsapp}
             connected={connected}
           />
