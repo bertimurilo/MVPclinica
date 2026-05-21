@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     .from('leads')
     .select(`
       id, clinic_id, phone, name, treatment_interest, status,
-      clinics ( z_api_instance_id, z_api_token )
+      clinics ( z_api_instance_id, z_api_token, z_api_client_token )
     `)
     .in('conversation_stage', ['pricing', 'presentation'])
     .eq('escalated', false)
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
 
   for (const lead of candidates ?? []) {
     const clinicRow = lead.clinics as unknown
-    const clinic = (Array.isArray(clinicRow) ? clinicRow[0] : clinicRow) as { z_api_instance_id: string; z_api_token: string } | null
+    const clinic = (Array.isArray(clinicRow) ? clinicRow[0] : clinicRow) as { z_api_instance_id: string; z_api_token: string; z_api_client_token?: string | null } | null
     if (!clinic?.z_api_instance_id || !clinic?.z_api_token) continue
 
     try {
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
       let allSent = true
       for (let i = 0; i < result.responses.length; i++) {
         if (i > 0) await new Promise(r => setTimeout(r, 1500))
-        const ok = await sendMessage(lead.phone, result.responses[i], clinic.z_api_instance_id, clinic.z_api_token)
+        const ok = await sendMessage(lead.phone, result.responses[i], clinic.z_api_instance_id, clinic.z_api_token, clinic.z_api_client_token)
         if (!ok) { allSent = false; break }
 
         await supabase.from('messages').insert({
@@ -101,7 +101,7 @@ async function resolveFollowUpType(
     .eq('direction', 'inbound')
     .order('created_at', { ascending: false })
     .limit(1)
-    .single()
+    .maybeSingle()
 
   if (!lastInbound) return null
 
@@ -125,7 +125,7 @@ async function resolveFollowUpType(
     .gt('created_at', lastInbound.created_at)
     .order('created_at', { ascending: false })
     .limit(1)
-    .single()
+    .maybeSingle()
 
   if (!lastOutbound) return null
 

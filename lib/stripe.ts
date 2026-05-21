@@ -59,7 +59,7 @@ export async function getSubscriptionStatus(subscriptionId: string) {
   const sub = await getStripe().subscriptions.retrieve(subscriptionId)
   return {
     status: sub.status,
-    currentPeriodEnd: new Date((sub as any).current_period_end * 1000),
+    currentPeriodEnd: new Date(sub.current_period_end * 1000),
     cancelAtPeriodEnd: sub.cancel_at_period_end,
   }
 }

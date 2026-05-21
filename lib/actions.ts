@@ -87,6 +87,7 @@ export async function getRecentLeads(clinicId: string) {
     .in('lead_id', leadIds)
     .eq('clinic_id', clinicId)
     .order('created_at', { ascending: false })
+    .limit(leadIds.length)
 
   const lastMsgByLead: Record<string, string> = {}
   for (const msg of (messages ?? []) as Array<{ lead_id: string; content: string }>) {
@@ -167,11 +168,13 @@ export async function getLead(
 }
 
 export async function updateLeadName(leadId: string, name: string) {
+  const clinicId = await getCurrentClinicId()
   const supabase = createServiceClient()
   const { error } = await supabase
     .from('leads')
     .update({ name: name.trim() })
     .eq('id', leadId)
+    .eq('clinic_id', clinicId)
   if (error) throw new Error(error.message)
   revalidatePath('/leads')
   revalidatePath(`/leads/${leadId}`)

@@ -1,0 +1,1 @@
+ALTER TABLE rate_limit_windows ENABLE ROW LEVEL SECURITY;

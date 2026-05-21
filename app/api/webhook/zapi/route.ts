@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   }
 
-  const rl = rateLimit(phone, 'zapi-webhook', { interval: 60 * 1000, limit: 10 })
+  const rl = await rateLimit(phone, 'zapi-webhook', { interval: 60 * 1000, limit: 10 })
   if (!rl.success) {
     return NextResponse.json({ ok: true }) // 200 silencioso para no alertar a Z-API
   }
@@ -194,7 +194,9 @@ async function processInbound({
       }
       try {
         await supabase.from('leads').update({ escalated: true }).eq('id', leadId)
-      } catch {}
+      } catch (error) {
+        console.error('[webhook] escalate lead failed:', error)
+      }
       return
     }
 

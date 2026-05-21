@@ -12,10 +12,18 @@ export async function GET() {
     }
 
     const serviceClient = createServiceClient()
+    const { data: userRow } = await serviceClient
+      .from('users')
+      .select('clinic_id')
+      .eq('id', user.id)
+      .single()
+    if (!userRow?.clinic_id) {
+      return NextResponse.json({ error: 'Clinic not found' }, { status: 404 })
+    }
     const { data: clinic, error } = await serviceClient
       .from('clinics')
       .select('*')
-      .eq('id', user.id)
+      .eq('id', userRow.clinic_id)
       .single()
 
     if (error) throw error
@@ -36,13 +44,28 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const ALLOWED_FIELDS = ['name', 'phone', 'address', 'agent_config']
     const body = await req.json() as Record<string, unknown>
+    const safeBody = Object.fromEntries(
+      Object.entries(body).filter(([key]) => ALLOWED_FIELDS.includes(key))
+    )
+    if (Object.keys(safeBody).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+    }
     const serviceClient = createServiceClient()
+    const { data: userRow } = await serviceClient
+      .from('users')
+      .select('clinic_id')
+      .eq('id', user.id)
+      .single()
+    if (!userRow?.clinic_id) {
+      return NextResponse.json({ error: 'Clinic not found' }, { status: 404 })
+    }
 
     const { data, error } = await serviceClient
       .from('clinics')
-      .update(body)
-      .eq('id', user.id)
+      .update(safeBody)
+      .eq('id', userRow.clinic_id)
       .select()
       .single()
 
