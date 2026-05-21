@@ -226,7 +226,7 @@ export async function sendHumanMessage(leadId: string, clinicId: string, content
     supabase.from('leads').select('phone').eq('id', leadId).eq('clinic_id', clinicId).single(),
     supabase
       .from('clinics')
-      .select('z_api_instance_id, z_api_token, z_api_connected')
+      .select('z_api_instance_id, z_api_token, z_api_connected, z_api_client_token')
       .eq('id', clinicId)
       .single(),
   ])
@@ -244,13 +244,14 @@ export async function sendHumanMessage(leadId: string, clinicId: string, content
 
   if (error) return { error: error.message }
 
-  const c = clinic as { z_api_instance_id?: string; z_api_token?: string; z_api_connected?: boolean } | null
+  const c = clinic as { z_api_instance_id?: string; z_api_token?: string; z_api_connected?: boolean; z_api_client_token?: string | null } | null
   if (c?.z_api_connected && c.z_api_instance_id && c.z_api_token) {
     await sendMessage(
       (lead as { phone: string }).phone,
       content.trim(),
       c.z_api_instance_id,
-      c.z_api_token
+      c.z_api_token,
+      c.z_api_client_token
     )
   }
 
