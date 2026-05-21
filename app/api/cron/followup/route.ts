@@ -43,14 +43,36 @@ export async function GET(req: NextRequest) {
 
   const processed: { leadId: string; type: string; sent: boolean }[] = []
 
+  // Batch: fetch all relevant messages for all candidate leads in one query
+  const candidateIds = (candidates ?? []).map(l => l.id)
+  const { data: allMessages } = candidateIds.length > 0
+    ? await supabase
+        .from('messages')
+        .select('lead_id, direction, sender, created_at')
+        .in('lead_id', candidateIds)
+        .order('created_at', { ascending: false })
+        .limit(20 * candidateIds.length)
+    : { data: [] }
+
+  const msgsByLead = new Map<string, Array<{ lead_id: string; direction: string; sender: string; created_at: string }>>()
+  for (const msg of (allMessages ?? []) as Array<{ lead_id: string; direction: string; sender: string; created_at: string }>) {
+    const arr = msgsByLead.get(msg.lead_id) ?? []
+    arr.push(msg)
+    msgsByLead.set(msg.lead_id, arr)
+  }
+
   for (const lead of candidates ?? []) {
     const clinicRow = lead.clinics as unknown
     const clinic = (Array.isArray(clinicRow) ? clinicRow[0] : clinicRow) as { z_api_instance_id: string; z_api_token: string; z_api_client_token?: string | null } | null
     if (!clinic?.z_api_instance_id || !clinic?.z_api_token) continue
 
     try {
-      const followUpType = await resolveFollowUpType(lead.id, now)
-      if (!followUpType) continue // already inactive or sent too many
+      const msgs = msgsByLead.get(lead.id) ?? []
+      const { type: followUpType, markInactive } = resolveFollowUpType(msgs, now)
+      if (markInactive) {
+        await supabase.from('leads').update({ status: 'inactivo' }).eq('id', lead.id)
+      }
+      if (!followUpType) continue
 
       const result = await generateFollowUpMessage(lead.id, lead.clinic_id, followUpType)
 
@@ -87,57 +109,27 @@ export async function GET(req: NextRequest) {
 }
 
 // ---------------------------------------------------------------------------
-// Determine which follow-up to send, or null if none needed
+// Determine which follow-up to send — pure, synchronous, no DB calls
 // ---------------------------------------------------------------------------
-async function resolveFollowUpType(
-  leadId: string,
+function resolveFollowUpType(
+  msgs: Array<{ direction: string; sender: string; created_at: string }>,
   nowMs: number
-): Promise<'first' | 'close' | null> {
-  // Get last inbound message
-  const { data: lastInbound } = await supabase
-    .from('messages')
-    .select('created_at')
-    .eq('lead_id', leadId)
-    .eq('direction', 'inbound')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+): { type: 'first' | 'close' | null; markInactive: boolean } {
+  const lastInbound = msgs.find(m => m.direction === 'inbound')
+  if (!lastInbound) return { type: null, markInactive: false }
 
-  if (!lastInbound) return null
+  const afterInbound = msgs.filter(m => m.created_at > lastInbound.created_at)
+  const outboundCount = afterInbound.filter(m => m.direction === 'outbound' && m.sender === 'agent').length
 
-  // Count outbound agent messages since last inbound
-  const { count } = await supabase
-    .from('messages')
-    .select('id', { count: 'exact', head: true })
-    .eq('lead_id', leadId)
-    .eq('direction', 'outbound')
-    .eq('sender', 'agent')
-    .gt('created_at', lastInbound.created_at)
+  if (outboundCount >= 3) return { type: null, markInactive: true }
 
-  const outboundCount = count ?? 0
-
-  // Get time since last outbound
-  const { data: lastOutbound } = await supabase
-    .from('messages')
-    .select('created_at')
-    .eq('lead_id', leadId)
-    .eq('direction', 'outbound')
-    .gt('created_at', lastInbound.created_at)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  if (!lastOutbound) return null
+  const lastOutbound = afterInbound.find(m => m.direction === 'outbound')
+  if (!lastOutbound) return { type: null, markInactive: false }
 
   const hoursSince = (nowMs - new Date(lastOutbound.created_at).getTime()) / 3600000
 
-  if (outboundCount === 1 && hoursSince >= 24) return 'first'
-  if (outboundCount === 2 && hoursSince >= 48) return 'close'
-  // 3+ outbound → already closed, mark inactive and stop
-  if (outboundCount >= 3) {
-    await supabase.from('leads').update({ status: 'inactivo' }).eq('id', leadId)
-    return null
-  }
+  if (outboundCount === 1 && hoursSince >= 24) return { type: 'first', markInactive: false }
+  if (outboundCount === 2 && hoursSince >= 48) return { type: 'close', markInactive: false }
 
-  return null
+  return { type: null, markInactive: false }
 }

@@ -27,44 +27,15 @@ export async function getCurrentClinicId(): Promise<string> {
 
 export async function getDashboardStats(clinicId: string) {
   const supabase = createClient()
-  const now = new Date()
-
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
-  const yesterdayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).toISOString()
-
-  const dayOfWeek = (now.getDay() + 6) % 7
-  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek).toISOString()
-  const lastWeekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek - 7).toISOString()
-
-  const thirtyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30).toISOString()
-
-  const [r1, r2, r3, r4, r5, r6] = await Promise.all([
-    supabase.from('leads').select('id', { count: 'exact', head: true })
-      .eq('clinic_id', clinicId).gte('created_at', todayStart),
-    supabase.from('leads').select('id', { count: 'exact', head: true })
-      .eq('clinic_id', clinicId).gte('created_at', yesterdayStart).lt('created_at', todayStart),
-    supabase.from('leads').select('id', { count: 'exact', head: true })
-      .eq('clinic_id', clinicId)
-      .neq('status', 'convertido').neq('status', 'inactivo').neq('status', 'perdido'),
-    supabase.from('appointments').select('id', { count: 'exact', head: true })
-      .eq('clinic_id', clinicId).gte('appointment_date', weekStart),
-    supabase.from('appointments').select('id', { count: 'exact', head: true })
-      .eq('clinic_id', clinicId).gte('appointment_date', lastWeekStart).lt('appointment_date', weekStart),
-    supabase.from('leads').select('status')
-      .eq('clinic_id', clinicId).gte('created_at', thirtyDaysAgo),
-  ])
-
-  const total30 = r6.data?.length ?? 0
-  const converted30 = (r6.data ?? []).filter((l: { status: string }) => l.status === 'convertido').length
-  const tasaConversion = total30 > 0 ? Math.round((converted30 / total30) * 100) : 0
-
-  return {
-    leads_hoy: r1.count ?? 0,
-    leads_hoy_ayer: r2.count ?? 0,
-    leads_activos: r3.count ?? 0,
-    citas_semana: r4.count ?? 0,
-    citas_semana_pasada: r5.count ?? 0,
-    tasa_conversion: tasaConversion,
+  const { data, error } = await supabase.rpc('get_dashboard_stats', { p_clinic_id: clinicId })
+  if (error) throw new Error(error.message)
+  return data as {
+    leads_hoy: number
+    leads_hoy_ayer: number
+    leads_activos: number
+    citas_semana: number
+    citas_semana_pasada: number
+    tasa_conversion: number
   }
 }
 
@@ -102,10 +73,10 @@ export async function getRecentLeads(clinicId: string) {
 
 export async function getLeadsDistribution(clinicId: string): Promise<Record<string, number>> {
   const supabase = createClient()
-  const { data } = await supabase.from('leads').select('status').eq('clinic_id', clinicId)
+  const { data } = await supabase.rpc('get_leads_distribution', { p_clinic_id: clinicId })
   const counts: Record<string, number> = {}
-  for (const row of (data ?? []) as Array<{ status: string }>) {
-    counts[row.status] = (counts[row.status] ?? 0) + 1
+  for (const row of (data ?? []) as Array<{ status: string; count: number }>) {
+    counts[row.status] = row.count
   }
   return counts
 }

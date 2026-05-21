@@ -15,25 +15,30 @@ export async function sendMessage(
   token: string,
   clientToken?: string | null
 ): Promise<boolean> {
-  try {
-    const res = await fetch(
-      `${BASE_URL}/instances/${instanceId}/token/${token}/send-text`,
-      {
-        method: 'POST',
-        headers: buildHeaders(clientToken),
-        body: JSON.stringify({ phone, message }),
-      }
-    )
-    if (!res.ok) {
+  const url = `${BASE_URL}/instances/${instanceId}/token/${token}/send-text`
+  const body = JSON.stringify({ phone, message })
+  const headers = buildHeaders(clientToken)
+  const MAX_ATTEMPTS = 3
+  const TIMEOUT_MS = 8000
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
+    try {
+      const res = await fetch(url, { method: 'POST', headers, body, signal: controller.signal })
+      clearTimeout(timer)
+      if (res.ok) return true
       const errorBody = await res.text()
-      console.error('[zapi] sendMessage failed:', res.status, errorBody)
-      return false
+      console.error(`[zapi] sendMessage attempt ${attempt} failed:`, res.status, errorBody)
+      if (attempt < MAX_ATTEMPTS) await new Promise(r => setTimeout(r, 1000 * attempt))
+    } catch (err) {
+      clearTimeout(timer)
+      console.error(`[zapi] sendMessage attempt ${attempt} error:`, err)
+      if (attempt < MAX_ATTEMPTS) await new Promise(r => setTimeout(r, 1000 * attempt))
+      if (attempt === MAX_ATTEMPTS) throw new Error(`[zapi] sendMessage failed after ${MAX_ATTEMPTS} attempts: ${err}`)
     }
-    return true
-  } catch (err) {
-    console.error('[zapi] sendMessage error:', err)
-    return false
   }
+  return false
 }
 
 export function normalizePhone(phone: string): string {
