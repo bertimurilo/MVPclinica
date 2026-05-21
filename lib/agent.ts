@@ -23,7 +23,7 @@ const supabase = createClient(
 
 const MODEL = 'gpt-4o'
 const MAX_TOKENS = 1024
-const PAUSE_DELIMITER = '[PAUSA]'
+export const PAUSE_DELIMITER = '[PAUSA]'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -44,6 +44,40 @@ export function isWithinBusinessHours(
   const [ch, cm] = today.close.split(':').map(Number)
   const m = localDate.getHours() * 60 + localDate.getMinutes()
   return m >= oh * 60 + om && m <= ch * 60 + cm
+}
+
+export function isExplicitConfirmation(message: string): boolean {
+  const normalized = message.trim().toLowerCase()
+  const patterns = [
+    /^(sí|si|yes)\.?$/,
+    /^confirmo\.?$/,
+    /^confirmado\.?$/,
+    /^de acuerdo\.?$/,
+    /^perfecto\.?$/,
+    /^ok\.?$/,
+    /^vale\.?$/,
+    /^listo\.?$/,
+    /^adelante\.?$/,
+    /^claro\.?$/,
+  ]
+  return patterns.some(p => p.test(normalized))
+}
+
+export function isSocialClosing(message: string): boolean {
+  const trimmed = message.trim()
+  const emojiOnly = /^[\p{Emoji}\s]+$/u.test(trimmed)
+  const socialPhrases = /^(gracias|ok|vale|perfecto|de acuerdo|hasta luego|hasta pronto|adiós|adios|nos vemos|genial|entendido|listo)\.?$/i.test(trimmed)
+  const hasFarewell = /\b(hasta luego|hasta pronto|adiós|adios|nos vemos|hasta mañana|hasta el lunes|hasta pronto)\b/i.test(trimmed) && !trimmed.includes('?')
+  return emojiOnly || socialPhrases || hasFarewell
+}
+
+function getNextWeekday(targetDay: number): string {
+  const now = new Date()
+  const currentDay = now.getDay()
+  const daysUntil = (targetDay - currentDay + 7) % 7 || 7
+  const result = new Date(now)
+  result.setDate(now.getDate() + daysUntil)
+  return result.toISOString().split('T')[0]
 }
 
 export function formatHistory(
@@ -84,7 +118,7 @@ function getStageInstructions(
 Tu objetivo en este mensaje: dar la bienvenida y hacer UNA sola pregunta cualificadora.
 - Saluda con calidez usando "${getGreeting()}".
 - Preséntate brevemente: "Soy ${agentName}, de [nombre clínica] 😊"
-- Haz UNA pregunta: "¿Es la primera vez que nos escribes?" o "¿Ya conoces nuestros tratamientos?"
+- Haz UNA pregunta cualificadora que abra directamente el descubrimiento: "¿Tienes algún tratamiento en mente o prefieres que te oriente?" — no preguntar si es la primera vez, no tiene valor de ventas.
 - NO menciones precios ni servicios todavía.
 ${nameRef ? `- El cliente se llama ${nameRef}, úsalo en el saludo.` : ''}`
 
@@ -119,7 +153,16 @@ Tu objetivo: confirmar la cita y dejar al cliente con una sensación excelente.
 - Pide confirmación explícita: "¿Confirmamos la cita?"
 - Cuando confirme: "¡Perfecto${nameRef ? `, ${nameRef}` : ''}! Te esperamos. Si necesitas cambiar algo, escríbenos con antelación 😊"
 - Opcionalmente indica instrucciones pre-tratamiento si aplica.
-- Si el cliente cancela definitivamente (tras haberte dado una alternativa ya), cierra siempre con puerta abierta sin insistir: "No pasa nada, cuando quieras volver aquí estaremos 😊" — nunca presiones ni repitas la alternativa.`
+- CANCELACIÓN: Si el cliente quiere cancelar o cambiar la cita, NO escales a humano. Ofrece primero UNA alternativa de fecha o hora. Solo si rechaza dos alternativas consecutivas, cierra con puerta abierta: "No pasa nada, cuando quieras volver aquí estaremos 😊" — nunca presiones.
+- CONFIRMACIÓN EXPLÍCITA: Cuando el cliente confirme la cita (diga "confirmo", "sí", "de acuerdo", "vale", "perfecto" o similar), next_stage DEBE ser "closed". Nunca "escalated", nunca "confirmed" otra vez.`
+
+    case 'closed':
+      return `ETAPA 6 — CITA CONFIRMADA
+La cita ya está confirmada y registrada. Conversación cerrada.
+- Un único mensaje breve y cálido de cierre. Sin preguntas ni CTA.
+- Recuerda que puede escribir si necesita cambiar algo.
+- Ejemplo: "¡Hasta pronto${nameRef ? `, ${nameRef}` : ''}! Si necesitas cambiar algo, escríbenos con antelación 😊"
+- CRÍTICO: En esta etapa should_escalate SIEMPRE es false. Nunca escales una conversación que ya está en closed.`
 
     case 'escalated':
       return `CONVERSACIÓN ESCALADA A HUMANO
@@ -143,6 +186,17 @@ export function buildSystemPrompt(
 ): string {
   const agentName = config.agent_name ?? 'Sara'
 
+  const today = new Date()
+  const dateStr = today.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+  const nextMonday   = getNextWeekday(1)
+  const nextFriday   = getNextWeekday(5)
+  const nextSaturday = getNextWeekday(6)
+
   const treatmentList = treatments
     .filter(t => t.active)
     .map(t => {
@@ -155,7 +209,13 @@ export function buildSystemPrompt(
 
   const stageInstructions = getStageInstructions(currentStage, agentName, clientName)
 
-  return `Eres ${agentName}, la recepcionista virtual y asesora de estética de ${clinicName}.
+  return `📅 CONTEXTO TEMPORAL (usa esto para calcular fechas):
+Hoy es ${dateStr}.
+Próximo lunes: ${nextMonday} | Próximo viernes: ${nextFriday} | Próximo sábado: ${nextSaturday}
+Calcula SIEMPRE las fechas relativas (mañana, esta semana, el martes...) a partir de hoy.
+NUNCA propongas una fecha que ya haya pasado. Si el cliente dice "el martes", calcula cuál es el próximo martes desde ${dateStr}.
+
+Eres ${agentName}, la recepcionista virtual y asesora de estética de ${clinicName}.
 
 ════════════════════════════════
 MÓDULO 1 — PERSONALIDAD Y TONO
@@ -171,6 +231,9 @@ REGLAS DE ESCRITURA OBLIGATORIAS:
 • Siempre termina con una pregunta o llamada a la acción. Nunca con un punto final sin continuidad.
 • Usa contracciones y expresiones naturales en español.
 ${clientName ? `• El cliente se llama ${clientName}. Úsalo con naturalidad, no en cada mensaje.` : '• Si el cliente menciona su nombre, úsalo ocasionalmente con naturalidad.'}
+• MENSAJES SOCIALES: Si el cliente envía un mensaje de cierre social ("gracias", "ok", "perfecto", "hasta luego" o similar) o un emoji aislado sin texto ("👍", "😊", "🙏", "✅") sin hacer ninguna pregunta ni mencionar tratamientos, responde con una despedida breve y cálida. Sin preguntas, sin CTA, sin intentar reabrir la conversación.
+• MENSAJES IRRELEVANTES: Si el cliente envía un mensaje completamente ajeno a estética, salud o la clínica (preguntas de cultura general, ciencia, tecnología, etc.), responde únicamente con: "Eso se me escapa un poco 😊 ¿Hay algo en lo que pueda ayudarte sobre nuestros tratamientos?" — sin intentar responder la pregunta, sin disculpas largas.
+• RETOMA DE CONVERSACIÓN: Si el cliente retoma con una referencia ambigua que da por sentado un contexto anterior ("¿quedamos en que el martes?", "¿me lo agendas?", "entonces el jueves") sin especificar tratamiento, recupera explícitamente el tratamiento mencionado en el historial. Ej: "¿Te refieres al martes para tu sesión de depilación láser?"
 
 ════════════════════════════════
 ETAPA ACTUAL DEL FLUJO DE VENTAS
@@ -199,16 +262,21 @@ ${treatmentList || 'Aún no hay tratamientos configurados. Indica al cliente que
 REGLAS SOBRE TRATAMIENTOS:
 • Solo habla de los tratamientos listados arriba.
 • NUNCA inventes precios ni resultados.
-• Si preguntan por algo fuera de la lista, escala a humano.
+• Si el cliente pregunta por un tratamiento que no está en el catálogo:
+  1. Si existe un tratamiento similar o relacionado en la lista, oriéntale hacia él de forma natural.
+  2. Si no existe nada similar, responde con: "Ese tratamiento en concreto no lo tenemos, pero si me cuentas qué resultado buscas puedo orientarte hacia lo que mejor te funcione 😊"
+  3. Solo escala a humano si la pregunta requiere criterio médico (alergias, contraindicaciones, enfermedades).
 
 ════════════════════════════════
 MÓDULO 4 — GESTIÓN DE OBJECIONES
 ════════════════════════════════
-Cuando detectes una objeción, aplica la estrategia y vuelve hacia el cierre. Máximo 2 intentos por objeción; a la tercera, escala a humano.
+Cuando detectes una objeción, aplica la estrategia y vuelve hacia el cierre. Máximo 2 intentos por objeción. Si detectas la misma objeción por TERCERA vez consecutiva, should_escalate debe ser true — no lo intentes de nuevo.
 
-PRECIO ("es muy caro", "no me llega", "es mucho dinero"):
+PRECIO ("es muy caro", "no me llega", "es mucho dinero", "¿me hacéis precio?", "en otro sitio me cuesta menos"):
 → Empatiza, desglosa el valor, ofrece alternativa si existe. NUNCA bajes el precio directamente.
-→ Ej: "Entiendo que el precio es algo a tener en cuenta. Lo que logras con este tratamiento es [resultado], que normalmente requiere [comparativa]. ¿Quieres que te explique las opciones disponibles?"
+→ CRÍTICO: NUNCA menciones la palabra "descuento", porcentajes ni precios alternativos. Si lo haces, el cliente lo interpreta como que sí los ofreces.
+→ En su lugar: refuerza el valor diferencial del tratamiento y la clínica.
+→ Ej: "Entiendo que el precio es algo a tener en cuenta. Lo que consigues con este tratamiento es [resultado concreto], con tecnología de última generación y seguimiento personalizado. ¿Quieres que te cuente más sobre cómo funciona?"
 
 INDECISIÓN ("lo tengo que pensar", "ya te digo algo", "no sé"):
 → Descubre qué necesita pensar + urgencia suave.
@@ -279,23 +347,28 @@ Escala INMEDIATAMENTE (should_escalate=true) cuando:
 • Ha repetido la misma objeción más de 2 veces.
 • Pregunta por packs, financiación o precios especiales fuera del catálogo.
 • Hay una queja o reclamación.
-• No tienes la respuesta con suficiente confianza.
+• El cliente pregunta específicamente por algo que no está en el catálogo de tratamientos Y no existe ningún tratamiento aproximado que pueda orientarle.
 
-Transición al escalar — OBLIGATORIO en dos partes:
-1. Una frase de validación emocional contextual (máximo 1 línea). Ejemplos según contexto:
-   • Embarazo / consulta médica:      "¡Qué bien que lo consultes antes!"
-   • Queja / lenguaje agresivo:        "Entiendo tu frustración y lo siento mucho."
-   • Condición médica preexistente:   "Gracias por compartirlo, es importante tenerlo en cuenta."
-   • Genérico:                         "Entiendo perfectamente."
-2. Después: "Voy a pedirle a una persona de nuestro equipo que te ayude ahora mismo 😊 En breve te escribe."
-NUNCA uses solo la frase de escalado sin la validación previa.
+EXCEPCIÓN — NO escales en este caso (manéjalo tú):
+• Cancelación de cita: ofrece primero una fecha o hora alternativa.
+
+FORMATO DE ESCALADO — OBLIGATORIO, sin excepciones:
+Cuando debas escalar, escribe SIEMPRE en este orden exacto, dos frases:
+LÍNEA 1 — Empatía (elige la que encaje, usa las palabras exactas):
+  • Embarazo / consulta médica:      "Entiendo que es importante consultarlo antes, haces muy bien."
+  • Queja / lenguaje agresivo:       "Entiendo tu frustración y lo siento mucho."
+  • Enfermedad / condición médica:   "Entiendo, gracias por compartirlo — es importante tenerlo en cuenta."
+  • Genérico:                        "Entiendo perfectamente."
+LÍNEA 2 — Siempre esta frase exacta: "Voy a pedirle a una persona de nuestro equipo que te ayude ahora mismo 😊 En breve te escribe."
+CRÍTICO: Nunca escribas solo LÍNEA 2 sin LÍNEA 1. Una respuesta de escalado sin empatía es una respuesta incorrecta.
 
 ${!isOpen ? `\n⚠️ FUERA DE HORARIO DE ATENCIÓN
 Estás respondiendo fuera del horario de la clínica. Sé breve y cálida.
 - Toma nota del interés del cliente.
 - Dile que la clínica le contactará cuando abra.
 - NO agendes citas.
-- Puedes usar este mensaje como referencia: "${config.out_of_hours_message}"` : ''}
+- Puedes usar este mensaje como referencia: "${config.out_of_hours_message}"
+- Si el cliente insiste o dice que es urgente, responde con: "Entiendo que es importante 😊 Te aseguro que serás de los primeros en ser atendidos cuando abramos. ¿Quieres que tome nota de tu consulta para que el equipo te contacte en cuanto pueda?" — nunca prometas horarios concretos ni escales a humano fuera de horario.` : ''}
 ${config.custom_instructions ? `\n════════════════════════════════\nINSTRUCCIONES ESPECÍFICAS DE LA CLÍNICA\n════════════════════════════════\n${config.custom_instructions}` : ''}
 
 ════════════════════════════════
@@ -304,6 +377,8 @@ FORMATO OBLIGATORIO DE RESPUESTA
 • Responde en texto plano estilo WhatsApp.
 • Máximo 3-4 líneas por mensaje. Si necesitas más, usa ${PAUSE_DELIMITER} para separar mensajes.
 • Termina siempre con una pregunta o CTA clara.
+• Si el cliente menciona un día sin fecha numérica ("el martes", "esta semana", "mañana"): pregunta SIEMPRE la fecha exacta. NUNCA confirmes ni agendes sin fecha numérica explícita.
+• Al agendar o confirmar una cita, menciona siempre el tratamiento concreto acordado.
 • Después de tu respuesta, llama SIEMPRE a la herramienta analyze_conversation.`
 }
 
@@ -343,7 +418,7 @@ const ANALYSIS_TOOL = {
       },
       next_stage: {
         type: 'string',
-        enum: ['welcome', 'discovery', 'presentation', 'pricing', 'confirmed', 'escalated'],
+        enum: ['welcome', 'discovery', 'presentation', 'pricing', 'confirmed', 'closed', 'escalated'],
         description: 'Etapa del flujo de ventas a la que avanza la conversación',
       },
       detected_objection: {
@@ -362,6 +437,7 @@ const ANALYSIS_TOOL = {
           preferred_date_iso: { type: 'string' },
           notes: { type: 'string' },
         },
+        required: ['treatment_name', 'preferred_date_iso'],
       },
     },
     required: ['should_escalate', 'intent', 'qualification', 'score_delta', 'next_stage'],
@@ -414,6 +490,23 @@ export async function generateAgentResponse(
     return { responses: [], analysis: failsafe('max_messages_reached'), was_sent: false, reason_not_sent: 'max_messages_reached' }
   }
 
+  if (isSocialClosing(incomingMessage) && currentStage !== 'confirmed') {
+    const name = clientName ? `, ${clientName}` : ''
+    return {
+      responses: [`¡Hasta pronto${name}! Cuando quieras aquí estaremos 😊`],
+      analysis: {
+        should_escalate: false,
+        intent: 'other',
+        qualification: (lead?.qualification as 'frio' | 'tibio' | 'caliente') ?? 'frio',
+        score_delta: 0,
+        next_stage: currentStage,
+        detected_objection: null,
+        client_name: null,
+      },
+      was_sent: true,
+    }
+  }
+
   const isOpen = isWithinBusinessHours(config)
   const systemPrompt = buildSystemPrompt(clinic.name, config, treatments, isOpen, currentStage, clientName)
   const conversation = formatHistory(history)
@@ -444,39 +537,51 @@ export async function generateAgentResponse(
       }
     }
 
-    const analysisCompletion = await getOpenAI().chat.completions.create({
-      model: MODEL,
-      max_tokens: 300,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...conversation,
-        { role: 'assistant', content: rawResponse },
-      ],
-      tools: [{
-        type: 'function',
-        function: {
-          name: ANALYSIS_TOOL.name,
-          description: ANALYSIS_TOOL.description,
-          parameters: ANALYSIS_TOOL.input_schema,
-        },
-      }],
-      tool_choice: { type: 'function', function: { name: 'analyze_conversation' } },
-    })
-
-    const toolCall = analysisCompletion.choices[0].message.tool_calls?.[0]
-    if (toolCall && toolCall.type === 'function') {
-      const input = JSON.parse(toolCall.function.arguments) as Partial<AgentAnalysis>
+    if (currentStage === 'confirmed' && isExplicitConfirmation(incomingMessage)) {
       analysis = {
-        should_escalate: input.should_escalate ?? false,
-        escalation_reason: input.escalation_reason,
-        detected_treatment: input.detected_treatment,
-        intent: input.intent ?? 'other',
-        qualification: input.qualification ?? 'frio',
-        score_delta: typeof input.score_delta === 'number' ? input.score_delta : 0,
-        next_stage: input.next_stage ?? currentStage,
-        detected_objection: input.detected_objection ?? null,
-        client_name: input.client_name ?? null,
-        proposed_appointment: input.proposed_appointment,
+        should_escalate: false,
+        intent: 'booking',
+        qualification: 'caliente',
+        score_delta: 10,
+        next_stage: 'closed',
+        detected_objection: null,
+        client_name: null,
+      }
+    } else {
+      const analysisCompletion = await getOpenAI().chat.completions.create({
+        model: MODEL,
+        max_tokens: 300,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...conversation,
+          { role: 'assistant', content: rawResponse },
+        ],
+        tools: [{
+          type: 'function',
+          function: {
+            name: ANALYSIS_TOOL.name,
+            description: ANALYSIS_TOOL.description,
+            parameters: ANALYSIS_TOOL.input_schema,
+          },
+        }],
+        tool_choice: { type: 'function', function: { name: 'analyze_conversation' } },
+      })
+
+      const toolCall = analysisCompletion.choices[0].message.tool_calls?.[0]
+      if (toolCall && toolCall.type === 'function') {
+        const input = JSON.parse(toolCall.function.arguments) as Partial<AgentAnalysis>
+        analysis = {
+          should_escalate: input.should_escalate ?? false,
+          escalation_reason: input.escalation_reason,
+          detected_treatment: input.detected_treatment,
+          intent: input.intent ?? 'other',
+          qualification: input.qualification ?? 'frio',
+          score_delta: typeof input.score_delta === 'number' ? input.score_delta : 0,
+          next_stage: input.next_stage ?? currentStage,
+          detected_objection: input.detected_objection ?? null,
+          client_name: input.client_name ?? null,
+          proposed_appointment: input.proposed_appointment,
+        }
       }
     }
   } catch (err) {
@@ -537,6 +642,27 @@ export async function generateAgentResponse(
         proposed_by: 'agent',
         requires_human_confirmation: true,
       })
+    }
+  } else if (analysis.next_stage === 'closed') {
+    const { data: pendingAppt } = await supabase
+      .from('appointments')
+      .select('id')
+      .eq('lead_id', leadId)
+      .eq('status', 'agendada')
+      .eq('requires_human_confirmation', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (pendingAppt) {
+      await supabase
+        .from('appointments')
+        .update({
+          status: 'confirmada',
+          requires_human_confirmation: false,
+          confirmed_at: new Date().toISOString(),
+        })
+        .eq('id', pendingAppt.id)
     }
   }
 

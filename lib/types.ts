@@ -72,7 +72,7 @@ export interface EscalationRules {
 export type BusinessHours = Record<string, { open: string; close: string } | null>
 
 // --- Conversation stage machine ---
-export type ConversationStage = 'welcome' | 'discovery' | 'presentation' | 'pricing' | 'confirmed' | 'escalated'
+export type ConversationStage = 'welcome' | 'discovery' | 'presentation' | 'pricing' | 'confirmed' | 'closed' | 'escalated'
 export type ObjectionType = 'price' | 'thinking' | 'competitor' | 'fear' | 'time' | 'doubt'
 
 // --- Lead ---

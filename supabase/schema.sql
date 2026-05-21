@@ -13,7 +13,7 @@ CREATE TABLE clinics (
   address TEXT,
   city TEXT DEFAULT 'Barcelona',
   phone_whatsapp TEXT,
-  z_api_instance_id TEXT,
+  z_api_instance_id TEXT UNIQUE,
   z_api_token TEXT,
   z_api_client_token TEXT,
   z_api_connected BOOLEAN DEFAULT false,
@@ -116,6 +116,7 @@ CREATE TABLE appointments (
   reported_to_stripe BOOLEAN DEFAULT false,
   proposed_by TEXT CHECK (proposed_by IN ('agent', 'human', 'client')),
   requires_human_confirmation BOOLEAN DEFAULT false,
+  confirmed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
