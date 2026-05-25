@@ -45,6 +45,13 @@ credentials.json
 # vercel
 .vercel
 
+# Supabase CLI temp
+supabase/.temp/
+
+# Test artifacts
+test_report.md
+test_results.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
