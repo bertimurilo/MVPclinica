@@ -32,7 +32,7 @@ const DIST_CONFIG = [
   { key: 'nuevo',         label: 'Nuevos',        color: 'bg-blue-500' },
   { key: 'contactado',    label: 'Contactados',   color: 'bg-amber-500' },
   { key: 'cita_agendada', label: 'Cita agendada', color: 'bg-violet-500' },
-  { key: 'convertido',    label: 'Convertidos',   color: 'bg-emerald-500' },
+  { key: 'convertido',    label: 'Convertidos',   color: 'bg-violet-400' },
   { key: 'perdido',       label: 'Perdidos',      color: 'bg-gray-600' },
 ]
 
@@ -40,7 +40,7 @@ const PIPELINE_COLS = [
   { key: 'nuevo',         label: 'Nuevos',        dot: 'bg-blue-500',    glow: 'rgba(59,130,246,0.5)' },
   { key: 'contactado',    label: 'Contactados',   dot: 'bg-amber-500',   glow: 'rgba(245,158,11,0.5)' },
   { key: 'cita_agendada', label: 'Cita agendada', dot: 'bg-violet-500',  glow: 'rgba(124,58,237,0.5)' },
-  { key: 'convertido',    label: 'Convertidos',   dot: 'bg-emerald-500', glow: 'rgba(16,185,129,0.5)' },
+  { key: 'convertido',    label: 'Convertidos',   dot: 'bg-violet-400',  glow: 'rgba(167,139,250,0.4)' },
 ]
 
 function formatRevenue(total: number) {

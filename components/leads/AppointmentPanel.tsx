@@ -11,7 +11,7 @@ interface AppointmentPanelProps {
 
 const STATUS_STYLES: Record<string, { label: string; cls: string }> = {
   agendada:   { label: 'Agendada',   cls: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' },
-  confirmada: { label: 'Confirmada', cls: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' },
+  confirmada: { label: 'Confirmada', cls: 'bg-violet-500/10 text-violet-400 border border-violet-500/20' },
   completada: { label: 'Completada', cls: 'bg-violet-500/10 text-violet-400 border border-violet-500/20' },
   cancelada:  { label: 'Cancelada',  cls: 'bg-red-500/10 text-red-400 border border-red-500/20' },
   no_show:    { label: 'No asistió', cls: 'bg-gray-600/20 text-gray-400 border border-gray-600/30' },
@@ -66,7 +66,7 @@ function AppointmentCard({ appt, clinicId }: { appt: Appointment; clinicId: stri
           <button
             onClick={() => handleAction('confirmada')}
             disabled={isPending}
-            className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-violet-500/10 text-violet-400 border border-violet-500/20 hover:bg-violet-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Confirmar
           </button>

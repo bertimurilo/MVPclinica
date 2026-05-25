@@ -153,11 +153,11 @@ export function WhatsAppTab({
       {/* Status banner */}
       <div className={`flex items-center gap-3 rounded-lg border px-4 py-3 ${
         isConnected
-          ? 'border-emerald-500/30 bg-emerald-500/10'
+          ? 'border-violet-500/30 bg-violet-500/10'
           : 'border-red-500/30 bg-red-500/10'
       }`}>
         <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${
-          isConnected ? 'bg-emerald-400' : 'bg-red-400'
+          isConnected ? 'bg-violet-400' : 'bg-red-400'
         }`} />
         <div>
           <p className="text-sm font-medium text-white">
@@ -362,7 +362,7 @@ export function WhatsAppTab({
           </div>
 
           {testMessage && (
-            <p className={`text-xs ${testMessage.ok ? 'text-emerald-400' : 'text-red-400'}`}>
+            <p className={`text-xs ${testMessage.ok ? 'text-violet-400' : 'text-red-400'}`}>
               {testMessage.text}
             </p>
           )}
@@ -400,7 +400,7 @@ export function WhatsAppTab({
               teléfono, ve a <em>Dispositivos vinculados → Vincular dispositivo</em> y escanea el QR.
             </li>
             <li>
-              Una vez escaneado, el estado cambiará a <strong className="text-emerald-400">Conectado</strong> automáticamente.
+              Una vez escaneado, el estado cambiará a <strong className="text-violet-400">Conectado</strong> automáticamente.
             </li>
           </ol>
         </details>
