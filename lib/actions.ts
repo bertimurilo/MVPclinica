@@ -5,7 +5,20 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { sendMessage } from '@/lib/zapi'
 import type { Appointment, Lead, LeadStatus, Message } from '@/lib/types'
 
-// ─── Auth helper ─────────────────────────────────────────────────────────────
+// ─── Auth + subscription helpers ─────────────────────────────────────────────
+
+/** Throws 'Suscripción inactiva' if the clinic's subscription is not active. */
+export async function assertClinicActive(clinicId: string): Promise<void> {
+  const supabase = createServiceClient()
+  const { data } = await supabase
+    .from('clinics')
+    .select('active')
+    .eq('id', clinicId)
+    .single()
+  if (!data?.active) {
+    throw new Error('Suscripción inactiva')
+  }
+}
 
 export async function getCurrentClinicId(): Promise<string> {
   const supabase = createClient()
@@ -140,6 +153,7 @@ export async function getLead(
 
 export async function updateLeadName(leadId: string, name: string) {
   const clinicId = await getCurrentClinicId()
+  await assertClinicActive(clinicId)
   const supabase = createServiceClient()
   const { error } = await supabase
     .from('leads')
@@ -152,6 +166,7 @@ export async function updateLeadName(leadId: string, name: string) {
 }
 
 export async function updateLeadStatus(leadId: string, clinicId: string, status: LeadStatus) {
+  await assertClinicActive(clinicId)
   const supabase = createClient()
   const { error } = await supabase
     .from('leads')
@@ -166,6 +181,7 @@ export async function updateLeadStatus(leadId: string, clinicId: string, status:
 }
 
 export async function saveLeadNote(leadId: string, clinicId: string, notes: string) {
+  await assertClinicActive(clinicId)
   const supabase = createClient()
   const { error } = await supabase
     .from('leads')
@@ -179,6 +195,7 @@ export async function saveLeadNote(leadId: string, clinicId: string, notes: stri
 }
 
 export async function escalateLead(leadId: string, clinicId: string) {
+  await assertClinicActive(clinicId)
   const supabase = createClient()
   const { error } = await supabase
     .from('leads')
@@ -193,6 +210,7 @@ export async function escalateLead(leadId: string, clinicId: string) {
 
 export async function sendHumanMessage(leadId: string, clinicId: string, content: string) {
   if (!content.trim()) return { error: 'Mensaje vacío' }
+  await assertClinicActive(clinicId)
 
   const supabase = createClient()
 
@@ -278,6 +296,7 @@ export async function updateAppointmentStatus(
   clinicId: string,
   status: 'confirmada' | 'cancelada'
 ) {
+  await assertClinicActive(clinicId)
   const supabase = createServiceClient()
   const { error } = await supabase
     .from('appointments')

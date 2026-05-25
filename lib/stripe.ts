@@ -1,10 +1,11 @@
 import Stripe from 'stripe'
+import { env } from '@/lib/env'
 
 let _stripe: Stripe | null = null
 
 export function getStripe(): Stripe {
   if (!_stripe) {
-    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    _stripe = new Stripe(env.STRIPE_SECRET_KEY, {
       apiVersion: '2026-04-22.dahlia',
     })
   }
@@ -14,7 +15,7 @@ export function getStripe(): Stripe {
 export const PLAN = {
   name: 'Venu Pro',
   price: 149,
-  priceId: process.env.STRIPE_PRICE_ID!,
+  priceId: env.STRIPE_PRICE_ID,
   features: [
     'Agente IA por WhatsApp',
     'Leads y pipeline ilimitados',

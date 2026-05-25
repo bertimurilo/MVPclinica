@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { timingSafeEqual } from 'crypto'
 import { z } from 'zod'
 import { createClient } from '@supabase/supabase-js'
+import { env } from '@/lib/env'
 import { generateAgentResponse, isWithinBusinessHours } from '@/lib/agent'
 import { sendMessage, normalizePhone } from '@/lib/zapi'
 import type { AgentConfig } from '@/lib/types'
@@ -9,8 +10,8 @@ import { rateLimit } from '@/lib/rateLimit'
 
 // Service role: no RLS, webhooks run without a user session.
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  env.NEXT_PUBLIC_SUPABASE_URL,
+  env.SUPABASE_SERVICE_ROLE_KEY,
   { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
 )
 
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
   // Configure the webhook URL in Z-API dashboard as:
   //   https://yourdomain.com/api/webhook/zapi?secret=<Z_API_WEBHOOK_SECRET>
   // Z-API calls the URL exactly as configured, so the param arrives on every request.
-  const expectedSecret = process.env.Z_API_WEBHOOK_SECRET
+  const expectedSecret = env.Z_API_WEBHOOK_SECRET
   if (expectedSecret) {
     const provided = req.nextUrl.searchParams.get('secret') ?? ''
     const expectedBuf = Buffer.from(expectedSecret, 'utf8')
@@ -82,6 +83,12 @@ export async function POST(req: NextRequest) {
 
   // Only process text messages
   if (!text) {
+    return NextResponse.json({ ok: true })
+  }
+
+  // Discard oversized messages (spam, copy-paste walls) before hitting OpenAI
+  if (text.length > 1000) {
+    console.warn('[webhook] Message too long, discarding:', phone, text.length, 'chars')
     return NextResponse.json({ ok: true })
   }
 

@@ -2,18 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { generateFollowUpMessage } from '@/lib/agent'
 import { sendMessage } from '@/lib/zapi'
+import { env } from '@/lib/env'
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  env.NEXT_PUBLIC_SUPABASE_URL,
+  env.SUPABASE_SERVICE_ROLE_KEY,
   { auth: { persistSession: false } }
 )
 
 // Vercel cron jobs send: Authorization: Bearer <CRON_SECRET>
 function isAuthorized(req: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET
-  if (!secret) return process.env.NODE_ENV === 'development'
-  return req.headers.get('authorization') === `Bearer ${secret}`
+  return req.headers.get('authorization') === `Bearer ${env.CRON_SECRET}`
 }
 
 export async function GET(req: NextRequest) {
@@ -84,10 +83,10 @@ export async function GET(req: NextRequest) {
       let allSent = true
       for (let i = 0; i < result.responses.length; i++) {
         if (i > 0) await new Promise(r => setTimeout(r, 1500))
-        const ok = await sendMessage(lead.phone, result.responses[i], clinic.z_api_instance_id, clinic.z_api_token, clinic.z_api_client_token)
-        if (!ok) { allSent = false; break }
 
-        await supabase.from('messages').insert({
+        // Store before sending: if Vercel kills the function between send and insert,
+        // the next cron run would see the stored message and skip the duplicate send.
+        const { error: insertErr } = await supabase.from('messages').insert({
           lead_id: lead.id,
           clinic_id: lead.clinic_id,
           direction: 'outbound',
@@ -95,6 +94,14 @@ export async function GET(req: NextRequest) {
           sender: 'agent',
           message_type: 'text',
         })
+        if (insertErr) {
+          console.error('[cron/followup] message insert error:', lead.id, insertErr)
+          allSent = false
+          break
+        }
+
+        const ok = await sendMessage(lead.phone, result.responses[i], clinic.z_api_instance_id, clinic.z_api_token, clinic.z_api_client_token)
+        if (!ok) { allSent = false; break }
       }
 
       processed.push({ leadId: lead.id, type: followUpType, sent: allSent })
