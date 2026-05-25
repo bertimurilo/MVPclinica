@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const rl = rateLimit(user.id, 'leads-api', { interval: 60 * 1000, limit: 60 })
+    const rl = await rateLimit(user.id, 'leads-api', { interval: 60 * 1000, limit: 60 })
     if (!rl.success) {
       return NextResponse.json(
         { error: 'Demasiadas peticiones.' },
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const rl = rateLimit(user.id, 'leads-api', { interval: 60 * 1000, limit: 60 })
+    const rl = await rateLimit(user.id, 'leads-api', { interval: 60 * 1000, limit: 60 })
     if (!rl.success) {
       return NextResponse.json(
         { error: 'Demasiadas peticiones.' },

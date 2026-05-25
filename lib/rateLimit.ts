@@ -1,36 +1,43 @@
-import { LRUCache } from 'lru-cache'
+import { createServiceClient } from '@/lib/supabase/server'
 
 type RateLimitOptions = {
   interval: number  // ventana en ms
   limit: number     // max requests por ventana
 }
 
-const caches = new Map<string, LRUCache<string, number[]>>()
-
-function getCache(key: string, options: RateLimitOptions) {
-  if (!caches.has(key)) {
-    caches.set(key, new LRUCache<string, number[]>({
-      max: 500,
-      ttl: options.interval,
-    }))
-  }
-  return caches.get(key)!
-}
-
-export function rateLimit(
+export async function rateLimit(
   identifier: string,
   namespace: string,
   options: RateLimitOptions
-): { success: boolean; remaining: number } {
-  const cache = getCache(namespace, options)
-  const now = Date.now()
-  const timestamps = (cache.get(identifier) ?? []).filter(
-    t => now - t < options.interval
-  )
-  if (timestamps.length >= options.limit) {
+): Promise<{ success: boolean; remaining: number }> {
+  const supabase = createServiceClient()
+  const windowStart = new Date(
+    Math.floor(Date.now() / options.interval) * options.interval
+  ).toISOString()
+
+  const { data, error } = await supabase.rpc('rate_limit_increment', {
+    p_identifier: identifier,
+    p_namespace: namespace,
+    p_window_start: windowStart,
+  })
+
+  if (error) {
+    // Fail open: si Supabase falla no bloqueamos el request
+    console.error('[rateLimit] Supabase error:', error.message)
+    return { success: true, remaining: options.limit }
+  }
+
+  const count = data as number
+
+  // Limpieza TTL en background — sin await para no bloquear
+  supabase
+    .from('rate_limit_windows')
+    .delete()
+    .lt('window_start', new Date(Date.now() - 60 * 60 * 1000).toISOString())
+    .then(() => {})
+
+  if (count > options.limit) {
     return { success: false, remaining: 0 }
   }
-  timestamps.push(now)
-  cache.set(identifier, timestamps)
-  return { success: true, remaining: options.limit - timestamps.length }
+  return { success: true, remaining: options.limit - count }
 }

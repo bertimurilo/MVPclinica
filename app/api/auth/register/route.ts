@@ -4,7 +4,7 @@ import { rateLimit } from '@/lib/rateLimit'
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for') ?? 'unknown'
-  const rl = rateLimit(ip, 'register', { interval: 15 * 60 * 1000, limit: 5 })
+  const rl = await rateLimit(ip, 'register', { interval: 15 * 60 * 1000, limit: 5 })
   if (!rl.success) {
     return NextResponse.json(
       { error: 'Demasiados intentos. Espera 15 minutos.' },

@@ -57,9 +57,10 @@ export async function createBillingPortalSession(
 
 export async function getSubscriptionStatus(subscriptionId: string) {
   const sub = await getStripe().subscriptions.retrieve(subscriptionId)
+  const item = sub.items.data[0]
   return {
     status: sub.status,
-    currentPeriodEnd: new Date(sub.current_period_end * 1000),
+    currentPeriodEnd: new Date(item.current_period_end * 1000),
     cancelAtPeriodEnd: sub.cancel_at_period_end,
   }
 }
