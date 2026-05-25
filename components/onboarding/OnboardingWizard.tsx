@@ -15,6 +15,7 @@ interface Props {
   token: string | null
   phoneWhatsapp: string | null
   connected: boolean
+  webhookUrl?: string
 }
 
 const STEPS = [
@@ -43,6 +44,7 @@ export function OnboardingWizard({
   token,
   phoneWhatsapp,
   connected,
+  webhookUrl,
 }: Props) {
   const [step, setStep] = useState(1)
   const router = useRouter()
@@ -99,6 +101,7 @@ export function OnboardingWizard({
             clientToken={null}
             phoneWhatsapp={phoneWhatsapp}
             connected={connected}
+            webhookUrl={webhookUrl}
           />
         )}
       </div>

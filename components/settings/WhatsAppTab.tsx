@@ -10,6 +10,8 @@ interface Props {
   clientToken:    string | null
   phoneWhatsapp:  string | null
   connected:      boolean
+  /** Pre-built webhook URL including the secret query param — passed from a Server Component so the secret never reaches the client bundle. Falls back to the public URL without secret. */
+  webhookUrl?:    string
 }
 
 export function WhatsAppTab({
@@ -19,6 +21,7 @@ export function WhatsAppTab({
   clientToken:   initialClientToken,
   phoneWhatsapp: initialPhone,
   connected:     initialConnected,
+  webhookUrl:    webhookUrlProp,
 }: Props) {
   const [instanceId,    setInstanceId]    = useState(initialInstanceId ?? '')
   const [token,         setToken]         = useState(initialToken ?? '')
@@ -36,7 +39,7 @@ export function WhatsAppTab({
   const [qrLoading,     setQrLoading]     = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/api/webhook/zapi`
+  const webhookUrl = webhookUrlProp ?? `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/api/webhook/zapi`
   const hasCredentials = !!(initialInstanceId && initialToken)
 
   const stopPolling = useCallback(() => {

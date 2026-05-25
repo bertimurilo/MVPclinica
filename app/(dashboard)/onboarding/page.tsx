@@ -27,6 +27,10 @@ export default async function OnboardingPage() {
   const agentConfig = agentResult.data as AgentConfig | null
   const clinic = clinicResult.data as Clinic | null
 
+  const base = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/api/webhook/zapi`
+  const secret = process.env.Z_API_WEBHOOK_SECRET
+  const webhookUrl = secret ? `${base}?secret=${encodeURIComponent(secret)}` : base
+
   return (
     <OnboardingWizard
       treatments={treatments}
@@ -36,6 +40,7 @@ export default async function OnboardingPage() {
       token={clinic?.z_api_token ?? null}
       phoneWhatsapp={clinic?.phone_whatsapp ?? null}
       connected={clinic?.z_api_connected ?? false}
+      webhookUrl={webhookUrl}
     />
   )
 }

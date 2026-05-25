@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { timingSafeEqual } from 'crypto'
 import { z } from 'zod'
 import { createClient } from '@supabase/supabase-js'
 import { generateAgentResponse, isWithinBusinessHours } from '@/lib/agent'
@@ -33,7 +34,24 @@ const WebhookSchema = z.object({
 }))
 
 export async function POST(req: NextRequest) {
-  // Security: instanceId is verified against the DB — only valid clinics are processed.
+  // Security — layer 1: validate Z_API_WEBHOOK_SECRET via query param.
+  // Configure the webhook URL in Z-API dashboard as:
+  //   https://yourdomain.com/api/webhook/zapi?secret=<Z_API_WEBHOOK_SECRET>
+  // Z-API calls the URL exactly as configured, so the param arrives on every request.
+  const expectedSecret = process.env.Z_API_WEBHOOK_SECRET
+  if (expectedSecret) {
+    const provided = req.nextUrl.searchParams.get('secret') ?? ''
+    const expectedBuf = Buffer.from(expectedSecret, 'utf8')
+    const providedBuf = Buffer.from(provided, 'utf8')
+    const valid =
+      expectedBuf.length === providedBuf.length &&
+      timingSafeEqual(expectedBuf, providedBuf)
+    if (!valid) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+  }
+
+  // Security — layer 2: instanceId is verified against the DB — only valid clinics are processed.
 
   let body: unknown
   try {
@@ -72,8 +90,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true }) // 200 silencioso para no alertar a Z-API
   }
 
-  // Process asynchronously so Z-API doesn't time out waiting for us
-  await processInbound({ phone, instanceId, messageId, text, contactName })
+  // Fire-and-forget: return 200 to Z-API immediately so it doesn't time out and retry.
+  // processInbound makes 2 serial OpenAI calls + 1 Z-API send which can exceed 15s.
+  // Vercel keeps the serverless function alive while the event loop has pending work.
+  void processInbound({ phone, instanceId, messageId, text, contactName }).catch(err =>
+    console.error('[webhook] unhandled processInbound error:', err)
+  )
 
   return NextResponse.json({ ok: true })
 }

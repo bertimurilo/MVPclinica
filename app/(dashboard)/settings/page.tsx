@@ -14,6 +14,12 @@ type PageProps = {
   searchParams: { [key: string]: string | string[] | undefined }
 }
 
+function buildWebhookUrl(): string {
+  const base = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/api/webhook/zapi`
+  const secret = process.env.Z_API_WEBHOOK_SECRET
+  return secret ? `${base}?secret=${encodeURIComponent(secret)}` : base
+}
+
 export default async function SettingsPage({ searchParams }: PageProps) {
   const rawTab = typeof searchParams.tab === 'string' ? searchParams.tab : undefined
   const tab: Tab = VALID_TABS.includes(rawTab as Tab) ? (rawTab as Tab) : 'tratamientos'
@@ -85,6 +91,7 @@ export default async function SettingsPage({ searchParams }: PageProps) {
           clientToken={clinic.z_api_client_token ?? null}
           phoneWhatsapp={clinic.phone_whatsapp ?? null}
           connected={clinic.z_api_connected}
+          webhookUrl={buildWebhookUrl()}
         />
       )}
     </div>
