@@ -6,9 +6,7 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
   '/dashboard':     { title: 'Dashboard',               subtitle: 'Resumen de actividad' },
   '/leads':         { title: 'Pipeline',                 subtitle: 'Gestión de contactos' },
   '/inbox':         { title: 'Inbox',                    subtitle: 'Conversaciones activas' },
-  '/conversations': { title: 'Conversaciones',           subtitle: 'Historial de mensajes' },
   '/appointments':  { title: 'Citas',                    subtitle: 'Agenda de la clínica' },
-  '/agent-config':  { title: 'Config. del Agente',       subtitle: 'Personaliza el agente IA' },
   '/settings':      { title: 'Ajustes',                  subtitle: 'Configuración de la clínica' },
 }
 
