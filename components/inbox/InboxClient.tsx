@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useTransition, useRef } from 'react'
-import { getLead, sendHumanMessage } from '@/lib/actions'
+import { getLead, sendHumanMessage, returnToAgent } from '@/lib/actions'
 import { createClient } from '@/lib/supabase/client'
 import { formatRelativeTime } from '@/lib/utils'
 import type { Lead, Message } from '@/lib/types'
@@ -188,10 +188,25 @@ export function InboxClient({ clinicId, initialLeads }: InboxClientProps) {
 
             {/* Escalated banner */}
             {selectedLeadData?.escalated && (
-              <div className="mx-4 mt-3 px-4 py-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg shrink-0">
+              <div className="mx-4 mt-3 px-4 py-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg shrink-0 flex items-center justify-between gap-3">
                 <p className="text-xs text-amber-400">
                   Atención humana activa — el agente no responderá.
                 </p>
+                <button
+                  onClick={async () => {
+                    if (!selectedLeadId) return
+                    await returnToAgent(selectedLeadId, clinicId)
+                    setLeads(prev => prev.map(l =>
+                      l.id === selectedLeadId ? { ...l, escalated: false } : l
+                    ))
+                  }}
+                  className="shrink-0 text-xs px-2.5 py-1 rounded-md transition-colors"
+                  style={{ background: 'rgba(124,58,237,0.20)', color: '#a78bfa', border: '1px solid rgba(124,58,237,0.30)' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,58,237,0.35)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(124,58,237,0.20)' }}
+                >
+                  Devolver a IA
+                </button>
               </div>
             )}
 

@@ -208,6 +208,20 @@ export async function escalateLead(leadId: string, clinicId: string) {
   return { success: true }
 }
 
+export async function returnToAgent(leadId: string, clinicId: string) {
+  await assertClinicActive(clinicId)
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('leads')
+    .update({ escalated: false, updated_at: new Date().toISOString() })
+    .eq('id', leadId)
+    .eq('clinic_id', clinicId)
+
+  if (error) return { error: error.message }
+  revalidatePath(`/leads/${leadId}`)
+  return { success: true }
+}
+
 export async function sendHumanMessage(leadId: string, clinicId: string, content: string) {
   if (!content.trim()) return { error: 'Mensaje vacío' }
   await assertClinicActive(clinicId)
