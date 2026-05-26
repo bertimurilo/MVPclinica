@@ -75,8 +75,10 @@ export default async function DashboardPage() {
   let clinicId: string
   try {
     clinicId = await getCurrentClinicId()
-  } catch {
-    redirect('/login')
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : ''
+    if (msg === 'No autenticado') redirect('/login')
+    redirect('/onboarding')
   }
 
   const [stats, recentLeads, distribution, revenue, appointmentsByDay] = await Promise.all([

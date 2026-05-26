@@ -21,8 +21,10 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
   let clinicId: string
   try {
     clinicId = await getCurrentClinicId()
-  } catch {
-    redirect('/login')
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : ''
+    if (msg === 'No autenticado') redirect('/login')
+    redirect('/onboarding')
   }
 
   const result = await getLead(params.id, clinicId)

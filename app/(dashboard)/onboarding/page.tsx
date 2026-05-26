@@ -15,7 +15,24 @@ export default async function OnboardingPage() {
     .single()
 
   const clinicId = (userData as { clinic_id: string } | null)?.clinic_id
-  if (!clinicId) redirect('/login')
+  if (!clinicId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8" style={{ background: '#030712' }}>
+        <div className="text-center max-w-sm">
+          <p className="text-white font-semibold mb-2">Cuenta incompleta</p>
+          <p className="text-gray-500 text-sm mb-6">
+            Tu cuenta no tiene una clínica asociada. Contacta con soporte o cierra sesión y vuelve a registrarte.
+          </p>
+          <a
+            href="/api/auth/logout"
+            className="inline-block bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
+          >
+            Cerrar sesión
+          </a>
+        </div>
+      </div>
+    )
+  }
 
   const [treatmentsResult, agentResult, clinicResult] = await Promise.all([
     supabase.from('treatments').select('*').eq('clinic_id', clinicId).order('name'),

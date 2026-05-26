@@ -10,8 +10,10 @@ export default async function InboxPage() {
   let clinicId: string
   try {
     clinicId = await getCurrentClinicId()
-  } catch {
-    redirect('/login')
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : ''
+    if (msg === 'No autenticado') redirect('/login')
+    redirect('/onboarding')
   }
 
   const leads = await getLeads(clinicId)
