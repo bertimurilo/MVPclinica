@@ -51,6 +51,7 @@ supabase/.temp/
 # Test artifacts
 test_report.md
 test_results.json
+scripts/.testclinic-snapshot.json
 
 # typescript
 *.tsbuildinfo

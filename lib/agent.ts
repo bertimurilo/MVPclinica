@@ -60,6 +60,10 @@ export function isExplicitConfirmation(message: string): boolean {
     /^listo\.?$/,
     /^adelante\.?$/,
     /^claro\.?$/,
+    // Afirmación + confirmación ("sí, confirmo", "vale confirmo", "perfecto de acuerdo")
+    /^(sí|si|vale|ok|perfecto|claro|de acuerdo)[,.\s]+(confirmo|confirmado|vale|ok|perfecto|adelante|listo|de acuerdo|claro)\.?$/,
+    // Imperativos de reserva ("agéndalo", "resérvalo", "confírmalo")
+    /^(confírmalo|confirmalo|resérvalo|reservalo|resérvala|reservala|agéndalo|agendalo|agéndala|agendala)\.?$/,
   ]
   return patterns.some(p => p.test(normalized))
 }
@@ -79,6 +83,34 @@ function getNextWeekday(targetDay: number): string {
   const result = new Date(now)
   result.setDate(now.getDate() + daysUntil)
   return result.toISOString().split('T')[0]
+}
+
+// Interpreta una hora "naive" (sin zona) como Europe/Madrid y devuelve el instante UTC.
+function madridToUTC(dateStr: string, hour: number, minute: number): Date {
+  const noon = new Date(`${dateStr}T12:00:00Z`)
+  const madridNoonHour = parseInt(
+    new Intl.DateTimeFormat('en', { timeZone: 'Europe/Madrid', hour: 'numeric', hour12: false }).format(noon),
+    10
+  )
+  const offsetHours = madridNoonHour - 12 // 1 en CET, 2 en CEST
+  const [y, mo, da] = dateStr.split('-').map(Number)
+  return new Date(Date.UTC(y, mo - 1, da, hour - offsetHours, minute, 0, 0))
+}
+
+// Normaliza la fecha propuesta por el modelo a ISO-UTC.
+// Devuelve null si no hay HORA concreta (rechazamos medianoche/00:00, señal de "el modelo
+// no tenía hora real") o si la fecha es inválida. Las horas sin offset se interpretan como Madrid.
+function normalizeProposedDate(raw: string): string | null {
+  const trimmed = raw.trim()
+  const m = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/)
+  if (!m) return null
+  const [, y, mo, d, hh, mm] = m
+  const hour = Number(hh)
+  const minute = Number(mm)
+  if (hour === 0 && minute === 0) return null // sin hora real
+  const hasOffset = /([zZ]|[+-]\d{2}:?\d{2})$/.test(trimmed)
+  const dt = hasOffset ? new Date(trimmed) : madridToUTC(`${y}-${mo}-${d}`, hour, minute)
+  return isNaN(dt.getTime()) ? null : dt.toISOString()
 }
 
 export function formatHistory(
@@ -635,24 +667,22 @@ export async function generateAgentResponse(
 
   await supabase.from('leads').update(leadUpdate).eq('id', leadId)
 
-  if (analysis.proposed_appointment?.preferred_date_iso) {
-    const apptDate = new Date(analysis.proposed_appointment.preferred_date_iso)
-    if (!isNaN(apptDate.getTime()) && apptDate > new Date()) {
-      const tName = analysis.proposed_appointment.treatment_name?.toLowerCase()
-      const matched = treatments.find(t => tName && t.name.toLowerCase() === tName)
-      await supabase.from('appointments').insert({
-        lead_id: leadId,
-        clinic_id: clinicId,
-        treatment_id: matched?.id ?? null,
-        appointment_date: analysis.proposed_appointment.preferred_date_iso,
-        status: 'agendada',
-        notes: `Propuesta por agente IA. ${analysis.proposed_appointment.notes ?? ''}`.trim(),
-        proposed_by: 'agent',
-        requires_human_confirmation: true,
-      })
-    }
-  } else if (analysis.next_stage === 'closed') {
-    const { data: pendingAppt } = await supabase
+  // --- Persistencia de cita --------------------------------------------------
+  // El orden importa. Si la conversación se está CONFIRMANDO, confirmamos la cita
+  // pendiente y NO creamos una nueva (evita duplicados). Solo si no estamos
+  // confirmando creamos/actualizamos la propuesta — y únicamente dentro de horario
+  // y con hora concreta.
+  const isConfirming =
+    finalStage === 'closed' ||
+    (currentStage === 'confirmed' && isExplicitConfirmation(incomingMessage))
+
+  const matchTreatment = (name?: string) => {
+    const n = name?.toLowerCase()
+    return treatments.find(t => n && t.name.toLowerCase() === n)
+  }
+
+  const findPendingAppt = async () => {
+    const { data } = await supabase
       .from('appointments')
       .select('id')
       .eq('lead_id', leadId)
@@ -661,8 +691,13 @@ export async function generateAgentResponse(
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
+    return data
+  }
 
+  if (isConfirming) {
+    const pendingAppt = await findPendingAppt()
     if (pendingAppt) {
+      // Auto-confirmación: el cliente ha dicho que sí.
       await supabase
         .from('appointments')
         .update({
@@ -671,6 +706,49 @@ export async function generateAgentResponse(
           confirmed_at: new Date().toISOString(),
         })
         .eq('id', pendingAppt.id)
+    } else if (isOpen && analysis.proposed_appointment?.preferred_date_iso) {
+      // Propuesta y confirmación en el mismo turno: crear ya confirmada.
+      const apptISO = normalizeProposedDate(analysis.proposed_appointment.preferred_date_iso)
+      if (apptISO && new Date(apptISO) > new Date()) {
+        await supabase.from('appointments').insert({
+          lead_id: leadId,
+          clinic_id: clinicId,
+          treatment_id: matchTreatment(analysis.proposed_appointment.treatment_name)?.id ?? null,
+          appointment_date: apptISO,
+          status: 'confirmada',
+          notes: `Agendada por agente IA. ${analysis.proposed_appointment.notes ?? ''}`.trim(),
+          proposed_by: 'agent',
+          requires_human_confirmation: false,
+          confirmed_at: new Date().toISOString(),
+        })
+      }
+    }
+  } else if (isOpen && analysis.proposed_appointment?.preferred_date_iso) {
+    const apptISO = normalizeProposedDate(analysis.proposed_appointment.preferred_date_iso)
+    if (apptISO && new Date(apptISO) > new Date()) {
+      const notes = `Propuesta por agente IA. ${analysis.proposed_appointment.notes ?? ''}`.trim()
+      const treatmentId = matchTreatment(analysis.proposed_appointment.treatment_name)?.id ?? null
+
+      // Dedupe: un lead tiene como mucho UNA cita pendiente. Si ya existe, la
+      // actualizamos en vez de crear otra.
+      const existingPending = await findPendingAppt()
+      if (existingPending) {
+        await supabase
+          .from('appointments')
+          .update({ treatment_id: treatmentId, appointment_date: apptISO, notes })
+          .eq('id', existingPending.id)
+      } else {
+        await supabase.from('appointments').insert({
+          lead_id: leadId,
+          clinic_id: clinicId,
+          treatment_id: treatmentId,
+          appointment_date: apptISO,
+          status: 'agendada',
+          notes,
+          proposed_by: 'agent',
+          requires_human_confirmation: true,
+        })
+      }
     }
   }
 
