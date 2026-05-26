@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   // Configure the webhook URL in Z-API dashboard as:
   //   https://yourdomain.com/api/webhook/zapi?secret=<Z_API_WEBHOOK_SECRET>
   // Z-API calls the URL exactly as configured, so the param arrives on every request.
-  const expectedSecret = env.Z_API_WEBHOOK_SECRET
+  const expectedSecret = process.env.Z_API_WEBHOOK_SECRET
   if (expectedSecret) {
     const provided = req.nextUrl.searchParams.get('secret') ?? ''
     const expectedBuf = Buffer.from(expectedSecret, 'utf8')

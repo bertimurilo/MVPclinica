@@ -16,7 +16,6 @@ const REQUIRED = [
   'STRIPE_PRICE_ID',
   'NEXT_PUBLIC_APP_URL',
   'CRON_SECRET',
-  'Z_API_WEBHOOK_SECRET',
 ] as const
 
 type EnvKey = (typeof REQUIRED)[number]
