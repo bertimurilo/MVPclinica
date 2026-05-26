@@ -5,6 +5,30 @@ import { useRouter } from 'next/navigation'
 import { updateAppointmentStatus } from '@/app/(dashboard)/appointments/actions'
 import type { AppointmentStatus } from '@/lib/types'
 
+const MADRID_TZ = 'Europe/Madrid'
+
+function getMadridParts(isoString: string): { day: number; month: number; year: number } {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: MADRID_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date(isoString))
+  return {
+    year:  parseInt(parts.find(p => p.type === 'year')!.value),
+    month: parseInt(parts.find(p => p.type === 'month')!.value),
+    day:   parseInt(parts.find(p => p.type === 'day')!.value),
+  }
+}
+
+function formatTimeMadrid(isoString: string): string {
+  return new Date(isoString).toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: MADRID_TZ,
+  })
+}
+
 const MONTH_NAMES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
@@ -82,15 +106,15 @@ export function CalendarView({ appointments, month, year }: Props) {
   const dayAppointments = (day: number) =>
     appointments.filter(a => {
       if (!a.appointment_date) return false
-      const d = new Date(a.appointment_date)
-      return d.getDate() === day && d.getMonth() + 1 === month && d.getFullYear() === year
+      const d = getMadridParts(a.appointment_date)
+      return d.day === day && d.month === month && d.year === year
     })
 
-  const today = new Date()
+  const todayMadrid = getMadridParts(new Date().toISOString())
   const isToday = (day: number) =>
-    day === today.getDate() &&
-    month === today.getMonth() + 1 &&
-    year === today.getFullYear()
+    day === todayMadrid.day &&
+    month === todayMadrid.month &&
+    year === todayMadrid.year
 
   // Month navigation
   const goMonth = (delta: number) => {
@@ -222,9 +246,7 @@ export function CalendarView({ appointments, month, year }: Props) {
           ) : (
             <div className="space-y-3">
               {selectedAppointments.map(a => {
-                const time = a.appointment_date
-                  ? new Date(a.appointment_date).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-                  : '—'
+                const time = a.appointment_date ? formatTimeMadrid(a.appointment_date) : '—'
 
                 return (
                   <div key={a.id} className="bg-gray-800 border border-gray-700 rounded-xl p-4 space-y-3">
@@ -247,7 +269,7 @@ export function CalendarView({ appointments, month, year }: Props) {
                       {a.treatment && (
                         <p>💉 {a.treatment.name}{a.treatment.price != null ? ` · ${a.treatment.price}€` : ''}</p>
                       )}
-                      {a.requires_human_confirmation && (
+                      {a.requires_human_confirmation && a.status === 'agendada' && (
                         <p className="text-amber-400">⚠ Requiere confirmación</p>
                       )}
                       {a.notes && <p className="text-gray-600 truncate">📝 {a.notes}</p>}
