@@ -1,3 +1,4 @@
+import { waitUntil } from '@vercel/functions'
 import { NextRequest, NextResponse } from 'next/server'
 import { timingSafeEqual } from 'crypto'
 import { z } from 'zod'
@@ -97,11 +98,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true }) // 200 silencioso para no alertar a Z-API
   }
 
-  // Fire-and-forget: return 200 to Z-API immediately so it doesn't time out and retry.
-  // processInbound makes 2 serial OpenAI calls + 1 Z-API send which can exceed 15s.
-  // Vercel keeps the serverless function alive while the event loop has pending work.
-  void processInbound({ phone, instanceId, messageId, text, contactName }).catch(err =>
-    console.error('[webhook] unhandled processInbound error:', err)
+  // waitUntil keeps the Vercel function alive after the 200 response is sent.
+  // Without it, Vercel terminates the function on response and processInbound never runs.
+  waitUntil(
+    processInbound({ phone, instanceId, messageId, text, contactName }).catch(err =>
+      console.error('[webhook] unhandled processInbound error:', err)
+    )
   )
 
   return NextResponse.json({ ok: true })
