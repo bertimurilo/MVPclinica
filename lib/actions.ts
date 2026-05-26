@@ -39,7 +39,7 @@ export async function getCurrentClinicId(): Promise<string> {
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 export async function getDashboardStats(clinicId: string) {
-  const supabase = createClient()
+  const supabase = createServiceClient()
   const { data, error } = await supabase.rpc('get_dashboard_stats', { p_clinic_id: clinicId })
   if (error) throw new Error(error.message)
   return data as {
@@ -85,7 +85,7 @@ export async function getRecentLeads(clinicId: string) {
 }
 
 export async function getLeadsDistribution(clinicId: string): Promise<Record<string, number>> {
-  const supabase = createClient()
+  const supabase = createServiceClient()
   const { data } = await supabase.rpc('get_leads_distribution', { p_clinic_id: clinicId })
   const counts: Record<string, number> = {}
   for (const row of (data ?? []) as Array<{ status: string; count: number }>) {
