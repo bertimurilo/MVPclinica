@@ -15,7 +15,6 @@ export function getStripe(): Stripe {
 export const PLAN = {
   name: 'Venu Pro',
   price: 149,
-  priceId: env.STRIPE_PRICE_ID,
   features: [
     'Agente IA por WhatsApp',
     'Leads y pipeline ilimitados',
@@ -36,7 +35,7 @@ export async function createCheckoutSession(
     mode: 'subscription',
     payment_method_types: ['card'],
     customer_email: clinicEmail,
-    line_items: [{ price: PLAN.priceId, quantity: 1 }],
+    line_items: [{ price: env.STRIPE_PRICE_ID, quantity: 1 }],
     success_url: successUrl,
     cancel_url: cancelUrl,
     metadata: { clinic_id: clinicId },
