@@ -2,20 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { getCurrentClinicId, assertClinicActive } from '@/lib/actions'
 import type { AppointmentStatus } from '@/lib/types'
-
-async function getClinicId(): Promise<string | null> {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const { data } = await supabase.from('users').select('clinic_id').eq('id', user.id).single()
-  return (data as { clinic_id: string } | null)?.clinic_id ?? null
-}
 
 export async function updateAppointmentStatus(id: string, status: AppointmentStatus) {
   const supabase = createClient()
-  const clinicId = await getClinicId()
+  const clinicId = await getCurrentClinicId()
   if (!clinicId) return { error: 'No autenticado' }
+  await assertClinicActive(clinicId)
 
   const { error } = await supabase
     .from('appointments')

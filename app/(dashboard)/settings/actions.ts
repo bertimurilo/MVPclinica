@@ -2,30 +2,28 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-
-async function getClinicId(): Promise<string | null> {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const { data } = await supabase.from('users').select('clinic_id').eq('id', user.id).single()
-  return (data as { clinic_id: string } | null)?.clinic_id ?? null
-}
+import { getCurrentClinicId, assertClinicActive } from '@/lib/actions'
 
 export async function saveTreatment(formData: FormData) {
   const supabase = createClient()
-  const clinicId = await getClinicId()
+  const clinicId = await getCurrentClinicId()
   if (!clinicId) return { error: 'No autenticado' }
+  await assertClinicActive(clinicId)
 
   const id = formData.get('id') as string | null
   const priceRaw = formData.get('price') as string
   const durRaw = formData.get('duration_minutes') as string
+  const price = priceRaw ? parseFloat(priceRaw) : null
+  const duration_minutes = durRaw ? parseInt(durRaw, 10) : null
+  if (price !== null && (isNaN(price) || price < 0)) return { error: 'Precio inválido' }
+  if (duration_minutes !== null && (isNaN(duration_minutes) || duration_minutes < 1)) return { error: 'Duración inválida' }
 
   const row = {
     clinic_id: clinicId,
-    name: formData.get('name') as string,
-    description: (formData.get('description') as string) || null,
-    price: priceRaw ? parseFloat(priceRaw) : null,
-    duration_minutes: durRaw ? parseInt(durRaw) : null,
+    name: (formData.get('name') as string)?.trim(),
+    description: (formData.get('description') as string)?.trim() || null,
+    price,
+    duration_minutes,
     category: (formData.get('category') as string) || null,
     active: formData.get('active') === 'true',
   }
@@ -41,8 +39,9 @@ export async function saveTreatment(formData: FormData) {
 
 export async function deleteTreatment(id: string) {
   const supabase = createClient()
-  const clinicId = await getClinicId()
+  const clinicId = await getCurrentClinicId()
   if (!clinicId) return { error: 'No autenticado' }
+  await assertClinicActive(clinicId)
 
   const { error } = await supabase
     .from('treatments')
@@ -57,8 +56,9 @@ export async function deleteTreatment(id: string) {
 
 export async function saveAgentConfig(formData: FormData) {
   const supabase = createClient()
-  const clinicId = await getClinicId()
+  const clinicId = await getCurrentClinicId()
   if (!clinicId) return { error: 'No autenticado' }
+  await assertClinicActive(clinicId)
 
   const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
   const businessHours: Record<string, { open: string; close: string } | null> = {}
@@ -84,7 +84,7 @@ export async function saveAgentConfig(formData: FormData) {
       complaint: formData.get('escalation_complaint') === 'on',
     },
     business_hours: businessHours,
-    max_auto_messages: parseInt((formData.get('max_auto_messages') as string) || '10'),
+    max_auto_messages: Math.max(1, parseInt((formData.get('max_auto_messages') as string) || '10', 10) || 10),
     custom_instructions: (formData.get('custom_instructions') as string) || null,
     updated_at: new Date().toISOString(),
   }
@@ -106,17 +106,17 @@ export async function saveAgentConfig(formData: FormData) {
 
 export async function saveClinicInfo(formData: FormData) {
   const supabase = createClient()
-  const clinicId = await getClinicId()
+  const clinicId = await getCurrentClinicId()
   if (!clinicId) return { error: 'No autenticado' }
 
   const { error } = await supabase
     .from('clinics')
     .update({
-      name: formData.get('name') as string,
-      email: formData.get('email') as string,
-      phone: formData.get('phone') as string,
-      address: formData.get('address') as string,
-      city: formData.get('city') as string,
+      name: (formData.get('name') as string)?.trim(),
+      email: (formData.get('email') as string)?.trim(),
+      phone: (formData.get('phone') as string)?.trim(),
+      address: (formData.get('address') as string)?.trim(),
+      city: (formData.get('city') as string)?.trim(),
       updated_at: new Date().toISOString(),
     })
     .eq('id', clinicId)
@@ -128,7 +128,7 @@ export async function saveClinicInfo(formData: FormData) {
 
 export async function updateWhatsAppStatus(connected: boolean) {
   const supabase = createClient()
-  const clinicId = await getClinicId()
+  const clinicId = await getCurrentClinicId()
   if (!clinicId) return { error: 'No autenticado' }
 
   const { error } = await supabase
