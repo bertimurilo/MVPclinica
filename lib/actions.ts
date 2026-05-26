@@ -211,9 +211,10 @@ export async function escalateLead(leadId: string, clinicId: string) {
 export async function returnToAgent(leadId: string, clinicId: string) {
   await assertClinicActive(clinicId)
   const supabase = createClient()
+  const now = new Date().toISOString()
   const { error } = await supabase
     .from('leads')
-    .update({ escalated: false, updated_at: new Date().toISOString() })
+    .update({ escalated: false, escalation_reset_at: now, updated_at: now })
     .eq('id', leadId)
     .eq('clinic_id', clinicId)
 

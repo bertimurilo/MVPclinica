@@ -454,17 +454,12 @@ export async function generateAgentResponse(
   clinicId: string,
   incomingMessage: string
 ): Promise<AgentResult> {
-  const [clinicQ, configQ, treatmentsQ, historyQ, leadQ, outboundCountQ] = await Promise.all([
+  const [clinicQ, configQ, treatmentsQ, historyQ, leadQ] = await Promise.all([
     supabase.from('clinics').select('name').eq('id', clinicId).single(),
     supabase.from('agent_config').select('*').eq('clinic_id', clinicId).single(),
     supabase.from('treatments').select('*').eq('clinic_id', clinicId).eq('active', true),
     supabase.from('messages').select('*').eq('lead_id', leadId).order('created_at').limit(20),
     supabase.from('leads').select('*').eq('id', leadId).single(),
-    supabase
-      .from('messages')
-      .select('id', { count: 'exact', head: true })
-      .eq('lead_id', leadId)
-      .eq('sender', 'agent'),
   ])
 
   if (!clinicQ.data || !configQ.data) {
@@ -476,7 +471,6 @@ export async function generateAgentResponse(
   const treatments = (treatmentsQ.data || []) as Treatment[]
   const history = (historyQ.data || []) as Message[]
   const lead = leadQ.data
-  const outboundCount = outboundCountQ.count || 0
 
   const currentStage = (lead?.conversation_stage as ConversationStage) ?? 'welcome'
   const clientName = lead?.name ?? null
@@ -486,7 +480,20 @@ export async function generateAgentResponse(
     return { responses: [], analysis: failsafe('already_escalated'), was_sent: false, reason_not_sent: 'already_escalated' }
   }
 
-  if (outboundCount >= (config.max_auto_messages ?? 10)) {
+  // Count only agent messages since the last time a human explicitly returned control
+  // to the AI (escalation_reset_at). This prevents immediate re-escalation after
+  // "Devolver a IA" is clicked on a lead that already hit max_auto_messages.
+  const outboundCountQ = supabase
+    .from('messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('lead_id', leadId)
+    .eq('sender', 'agent')
+  if (lead?.escalation_reset_at) {
+    outboundCountQ.gt('created_at', lead.escalation_reset_at)
+  }
+  const { count: outboundCount } = await outboundCountQ
+
+  if ((outboundCount ?? 0) >= (config.max_auto_messages ?? 10)) {
     await supabase.from('leads').update({ escalated: true }).eq('id', leadId)
     return { responses: [], analysis: failsafe('max_messages_reached'), was_sent: false, reason_not_sent: 'max_messages_reached' }
   }
