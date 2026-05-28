@@ -35,7 +35,7 @@ export default async function OnboardingPage() {
   }
 
   const [treatmentsResult, agentResult, clinicResult] = await Promise.all([
-    supabase.from('treatments').select('*').eq('clinic_id', clinicId).order('name'),
+    supabase.from('treatments').select('*').eq('clinic_id', clinicId).is('deleted_at', null).order('name'),
     supabase.from('agent_config').select('*').eq('clinic_id', clinicId).single(),
     supabase.from('clinics').select('*').eq('id', clinicId).single(),
   ])

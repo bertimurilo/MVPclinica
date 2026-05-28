@@ -53,6 +53,7 @@ export default async function SettingsPage({ searchParams }: PageProps) {
       .from('treatments')
       .select('*')
       .eq('clinic_id', clinicId)
+      .is('deleted_at', null)
       .order('name')
     treatments = (data as Treatment[]) ?? []
   } else if (tab === 'agente') {

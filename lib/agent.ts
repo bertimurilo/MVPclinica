@@ -489,7 +489,7 @@ export async function generateAgentResponse(
   const [clinicQ, configQ, treatmentsQ, historyQ, leadQ] = await Promise.all([
     supabase.from('clinics').select('name').eq('id', clinicId).single(),
     supabase.from('agent_config').select('*').eq('clinic_id', clinicId).single(),
-    supabase.from('treatments').select('*').eq('clinic_id', clinicId).eq('active', true),
+    supabase.from('treatments').select('*').eq('clinic_id', clinicId).eq('active', true).is('deleted_at', null),
     supabase.from('messages').select('*').eq('lead_id', leadId).order('created_at').limit(20),
     supabase.from('leads').select('*').eq('id', leadId).single(),
   ])
