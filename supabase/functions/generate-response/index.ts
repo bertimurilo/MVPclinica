@@ -24,7 +24,7 @@ serve(async (req) => {
     const [clinicRes, configRes, treatmentsRes, messagesRes] = await Promise.all([
       supabase.from('clinics').select('name').eq('id', clinic_id).single(),
       supabase.from('agent_config').select('*').eq('clinic_id', clinic_id).single(),
-      supabase.from('treatments').select('*').eq('clinic_id', clinic_id).eq('active', true),
+      supabase.from('treatments').select('*').eq('clinic_id', clinic_id).eq('active', true).is('deleted_at', null),
       supabase.from('messages').select('*').eq('lead_id', lead_id).order('created_at').limit(20),
     ])
 
