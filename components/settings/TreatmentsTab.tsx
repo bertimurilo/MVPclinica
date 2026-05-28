@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { saveTreatment, deleteTreatment } from '@/app/(dashboard)/settings/actions'
+import { ImportTreatmentsModal } from './ImportTreatmentsModal'
 import type { Treatment } from '@/lib/types'
 
 type EditState = {
@@ -22,6 +23,7 @@ export function TreatmentsTab({ treatments }: { treatments: Treatment[] }) {
   const [editing, setEditing] = useState<EditState | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [showImport, setShowImport] = useState(false)
 
   const startEdit = (t: Treatment) => setEditing({
     id: t.id,
@@ -64,15 +66,28 @@ export function TreatmentsTab({ treatments }: { treatments: Treatment[] }) {
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-400">{treatments.length} tratamiento{treatments.length !== 1 ? 's' : ''}</p>
         {!editing && (
-          <button
-            onClick={() => setEditing(BLANK)}
-            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-violet-600 hover:bg-violet-700 text-white transition-colors flex items-center gap-1.5"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Añadir tratamiento
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowImport(true)}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors flex items-center gap-1.5"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              Importar
+            </button>
+            <button
+              onClick={() => setEditing(BLANK)}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-violet-600 hover:bg-violet-700 text-white transition-colors flex items-center gap-1.5"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Añadir tratamiento
+            </button>
+          </div>
         )}
       </div>
 
@@ -168,6 +183,13 @@ export function TreatmentsTab({ treatments }: { treatments: Treatment[] }) {
           )}
         </div>
       </div>
+
+      {showImport && (
+        <ImportTreatmentsModal
+          existingTreatments={treatments}
+          onClose={() => setShowImport(false)}
+        />
+      )}
     </div>
   )
 }
@@ -213,7 +235,7 @@ function EditRow({
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Precio (€)">
-            <input value={state.price} onChange={set('price')} type="number" min="0" step="0.01" placeholder="350" className={INPUT_CLS} />
+            <input value={state.price} onChange={set('price')} type="number" min="0.01" step="0.01" placeholder="350" className={INPUT_CLS} />
           </Field>
           <Field label="Duración (min)">
             <input value={state.duration_minutes} onChange={set('duration_minutes')} type="number" min="0" placeholder="45" className={INPUT_CLS} />
