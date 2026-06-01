@@ -145,6 +145,13 @@ const SCENARIOS: Scenario[] = [
     turns: ['¿Quién ganó el mundial de fútbol de 2010?'],
     expect: '"Eso se me escapa un poco 😊 ¿Hay algo en lo que pueda ayudarte...?" No responde la pregunta.',
   },
+  {
+    id: 'K',
+    title: 'Tratamiento del FAQ pero fuera de catálogo',
+    turns: ['Hola, ¿hacéis Botox o mesoterapia facial?'],
+    expect:
+      'NO describe ni ofrece el tratamiento. Dice que no está disponible y reconvierte. NUNCA da info detallada de precio/sesiones de un tratamiento fuera de catálogo.',
+  },
 ]
 
 // ─── Carga diferida del agente (después de dotenv) ────────────────────────────

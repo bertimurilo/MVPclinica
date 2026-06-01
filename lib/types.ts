@@ -22,6 +22,7 @@ export interface Clinic {
   plan: 'starter' | 'pro' | 'enterprise';
   active: boolean;
   trial_ends_at?: string;
+  notification_phone?: string;
   created_at: string;
 }
 
@@ -214,4 +215,21 @@ export interface AgentResult {
   analysis: AgentAnalysis;
   was_sent: boolean;
   reason_not_sent?: 'max_messages_reached' | 'already_escalated' | 'config_missing' | 'openai_error' | 'empty_response';
+}
+
+// --- Activity Timeline ---
+export type TimelineEventType =
+  | 'lead_created'
+  | 'messages_day'
+  | 'appointment_proposed'
+  | 'appointment_confirmed'
+  | 'appointment_cancelled'
+  | 'escalated'
+  | 'escalation_reset'
+
+export interface TimelineEvent {
+  type: TimelineEventType;
+  timestamp: string;
+  label: string;
+  detail?: string;
 }

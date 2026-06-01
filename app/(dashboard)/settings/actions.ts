@@ -120,6 +120,8 @@ export async function saveClinicInfo(formData: FormData) {
   const clinicId = await getCurrentClinicId()
   if (!clinicId) return { error: 'No autenticado' }
 
+  const notificationPhone = (formData.get('notification_phone') as string)?.trim() || null
+
   const { error } = await supabase
     .from('clinics')
     .update({
@@ -128,6 +130,7 @@ export async function saveClinicInfo(formData: FormData) {
       phone: (formData.get('phone') as string)?.trim(),
       address: (formData.get('address') as string)?.trim(),
       city: (formData.get('city') as string)?.trim(),
+      notification_phone: notificationPhone,
       updated_at: new Date().toISOString(),
     })
     .eq('id', clinicId)

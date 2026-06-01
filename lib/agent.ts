@@ -1,6 +1,7 @@
 import OpenAI from 'openai'
 import { createClient } from '@supabase/supabase-js'
 import { env } from '@/lib/env'
+import { notifyOwner, escalationMessage, appointmentConfirmedMessage } from '@/lib/notifications'
 import type {
   AgentConfig,
   Treatment,
@@ -206,8 +207,45 @@ La cita ya está confirmada y registrada. Conversación cerrada.
 }
 
 // ---------------------------------------------------------------------------
-// System prompt — Módulos 1-6
+// System prompt — Módulos 0-6
 // ---------------------------------------------------------------------------
+
+interface ClientContext {
+  isReturning: boolean
+  pastAppointments: { treatmentName: string | null; date: string; status: string }[]
+  notes: string | null
+}
+
+function buildClientContextBlock(ctx: ClientContext): string {
+  const lines: string[] = [
+    '════════════════════════════════',
+    'MÓDULO 0 — QUIÉN ES ESTE CLIENTE',
+    '════════════════════════════════',
+  ]
+
+  if (ctx.isReturning) {
+    lines.push('⭐ CLIENTE RECURRENTE — ya ha visitado la clínica antes.')
+    if (ctx.pastAppointments.length > 0) {
+      lines.push('Tratamientos anteriores:')
+      for (const appt of ctx.pastAppointments) {
+        const treatment = appt.treatmentName ?? 'Tratamiento no especificado'
+        const date = new Date(appt.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
+        const statusLabel = appt.status === 'completada' ? 'completada' : appt.status === 'confirmada' ? 'confirmada' : appt.status
+        lines.push(`• ${treatment} — ${date} (${statusLabel})`)
+      }
+    }
+    lines.push('Trato con calidez y familiaridad. Puedes hacer referencia a visitas anteriores si surge de forma natural.')
+  } else {
+    lines.push('Cliente nuevo, sin historial previo en la clínica. Trato de bienvenida.')
+  }
+
+  if (ctx.notes?.trim()) {
+    lines.push(`\nNotas internas del equipo: "${ctx.notes.trim()}"`)
+    lines.push('Tenlas en cuenta al personalizar la conversación, pero NO las menciones directamente al cliente.')
+  }
+
+  return lines.join('\n')
+}
 
 export function buildSystemPrompt(
   clinicName: string,
@@ -215,7 +253,8 @@ export function buildSystemPrompt(
   treatments: Treatment[],
   isOpen: boolean,
   currentStage: ConversationStage = 'welcome',
-  clientName?: string | null
+  clientName?: string | null,
+  clientContext?: ClientContext
 ): string {
   const agentName = config.agent_name ?? 'Sara'
 
@@ -242,6 +281,8 @@ export function buildSystemPrompt(
 
   const stageInstructions = getStageInstructions(currentStage, agentName, clientName)
 
+  const clientContextBlock = clientContext ? buildClientContextBlock(clientContext) : ''
+
   return `📅 CONTEXTO TEMPORAL (usa esto para calcular fechas):
 Hoy es ${dateStr}.
 Próximo lunes: ${nextMonday} | Próximo viernes: ${nextFriday} | Próximo sábado: ${nextSaturday}
@@ -249,6 +290,13 @@ Calcula SIEMPRE las fechas relativas (mañana, esta semana, el martes...) a part
 NUNCA propongas una fecha que ya haya pasado. Si el cliente dice "el martes", calcula cuál es el próximo martes desde ${dateStr}.
 
 Eres ${agentName}, la recepcionista virtual y asesora de estética de ${clinicName}.
+
+${clientContextBlock}
+
+⚠️ REGLA ABSOLUTA — CATÁLOGO CERRADO:
+Solo puedes hablar de los tratamientos que aparecen en el MÓDULO 3. Esta lista es cerrada y definitiva.
+Si el cliente pregunta por un tratamiento que NO está en esa lista, NO lo describas, NO lo recomiendes, NO des precios ni detalles aunque los conozcas. Aplica siempre la regla del MÓDULO 3.
+El conocimiento del MÓDULO 5 es solo para contextualizar tratamientos que SÍ están en catálogo.
 
 ════════════════════════════════
 MÓDULO 1 — PERSONALIDAD Y TONO
@@ -288,17 +336,19 @@ Si el cliente dice "el martes" o cualquier referencia de día sin fecha numéric
 NUNCA asumas que "el martes" significa "el próximo martes" o "este martes" sin confirmación.
 
 ════════════════════════════════
-MÓDULO 3 — TRATAMIENTOS DISPONIBLES EN ${clinicName.toUpperCase()}
+MÓDULO 3 — CATÁLOGO OFICIAL DE ${clinicName.toUpperCase()} (LISTA CERRADA)
 ════════════════════════════════
+Estos son los ÚNICOS tratamientos que puedes mencionar, describir o recomendar:
+
 ${treatmentList || 'Aún no hay tratamientos configurados. Indica al cliente que pronto tendrás el catálogo completo.'}
 
-REGLAS SOBRE TRATAMIENTOS:
-• Solo habla de los tratamientos listados arriba.
-• NUNCA inventes precios ni resultados.
-• Si el cliente pregunta por un tratamiento que no está en el catálogo:
-  1. Si existe un tratamiento similar o relacionado en la lista, oriéntale hacia él de forma natural.
-  2. Si no existe nada similar, responde con: "Ese tratamiento en concreto no lo tenemos, pero si me cuentas qué resultado buscas puedo orientarte hacia lo que mejor te funcione 😊"
-  3. Solo escala a humano si la pregunta requiere criterio médico (alergias, contraindicaciones, enfermedades).
+REGLAS SOBRE TRATAMIENTOS (OBLIGATORIAS):
+• Solo puedes hablar de los tratamientos de la lista de arriba. Si no está en esa lista, no existe para ti.
+• NUNCA inventes precios ni resultados, aunque los conozcas del MÓDULO 5.
+• Si el cliente pregunta por un tratamiento que NO está en la lista:
+  1. Si hay un tratamiento similar en la lista, oriéntale hacia él de forma natural sin nombrar el que pidió.
+  2. Si no hay nada similar: "Ese tratamiento en concreto no lo tenemos, pero si me cuentas qué resultado buscas puedo orientarte hacia lo que mejor te funcione 😊"
+  3. Escala a humano solo si la pregunta requiere criterio médico (alergias, contraindicaciones, enfermedades).
 
 ════════════════════════════════
 MÓDULO 4 — GESTIÓN DE OBJECIONES
@@ -334,7 +384,7 @@ DUDA DE RESULTADOS ("no sé si me funcionará", "no veo que funcione"):
 ════════════════════════════════
 MÓDULO 5 — CONOCIMIENTO DE ESTÉTICA (FAQs)
 ════════════════════════════════
-Usa este conocimiento para responder preguntas generales con seguridad. NUNCA des diagnósticos ni consejos médicos específicos. Para preguntas sensibles (alergias, embarazo, enfermedades, medicación), escala SIEMPRE a un humano.
+Este conocimiento te sirve EXCLUSIVAMENTE para contextualizar y enriquecer los tratamientos que SÍ están en el catálogo de MÓDULO 3. NUNCA uses este bloque para describir, recomendar ni dar información sobre tratamientos que NO están en el catálogo, aunque aparezcan aquí. Si el cliente pregunta por un tratamiento de este bloque que no figura en MÓDULO 3, aplica la regla de MÓDULO 3 (punto 2 o 3 según corresponda) exactamente igual que con cualquier otro tratamiento fuera de catálogo. NUNCA des diagnósticos ni consejos médicos específicos. Para preguntas sensibles (alergias, embarazo, enfermedades, medicación), escala SIEMPRE a un humano.
 
 DEPILACIÓN LÁSER:
 • Sesiones: entre 6-8 de media según zona y tipo de vello/piel.
@@ -435,7 +485,7 @@ const ANALYSIS_TOOL = {
       },
       detected_treatment: {
         type: 'string',
-        description: 'Tratamiento concreto que el cliente está mencionando o en el que muestra interés',
+        description: 'Tratamiento del catálogo (MÓDULO 3) que el cliente está mencionando o en el que muestra interés. SOLO puede ser uno de los tratamientos listados en el catálogo de esta clínica. Si el cliente menciona un tratamiento que NO está en el catálogo, deja este campo en null.',
       },
       intent: {
         type: 'string',
@@ -486,12 +536,19 @@ export async function generateAgentResponse(
   clinicId: string,
   incomingMessage: string
 ): Promise<AgentResult> {
-  const [clinicQ, configQ, treatmentsQ, historyQ, leadQ] = await Promise.all([
+  const [clinicQ, configQ, treatmentsQ, historyQ, leadQ, pastApptsQ] = await Promise.all([
     supabase.from('clinics').select('name').eq('id', clinicId).single(),
     supabase.from('agent_config').select('*').eq('clinic_id', clinicId).single(),
     supabase.from('treatments').select('*').eq('clinic_id', clinicId).eq('active', true).is('deleted_at', null),
     supabase.from('messages').select('*').eq('lead_id', leadId).order('created_at').limit(20),
     supabase.from('leads').select('*').eq('id', leadId).single(),
+    supabase
+      .from('appointments')
+      .select('appointment_date, status, treatment:treatments(name)')
+      .eq('lead_id', leadId)
+      .in('status', ['confirmada', 'completada', 'cancelada', 'no_show'])
+      .order('appointment_date', { ascending: false })
+      .limit(5),
   ])
 
   if (!clinicQ.data || !configQ.data) {
@@ -527,6 +584,7 @@ export async function generateAgentResponse(
 
   if ((outboundCount ?? 0) >= (config.max_auto_messages ?? 10)) {
     await supabase.from('leads').update({ escalated: true }).eq('id', leadId)
+    notifyOwner(clinicId, escalationMessage(lead?.name ?? null, lead?.phone ?? '', 'max_messages_reached', leadId), supabase).catch(() => {})
     return { responses: [], analysis: failsafe('max_messages_reached'), was_sent: false, reason_not_sent: 'max_messages_reached' }
   }
 
@@ -548,7 +606,19 @@ export async function generateAgentResponse(
   }
 
   const isOpen = isWithinBusinessHours(config)
-  const systemPrompt = buildSystemPrompt(clinic.name, config, treatments, isOpen, currentStage, clientName)
+
+  const pastAppts = (pastApptsQ.data ?? []).map(a => ({
+    treatmentName: ((a.treatment as unknown) as { name: string } | null)?.name ?? null,
+    date: a.appointment_date as string,
+    status: a.status as string,
+  }))
+  const clientContext: ClientContext = {
+    isReturning: pastAppts.some(a => a.status === 'confirmada' || a.status === 'completada'),
+    pastAppointments: pastAppts,
+    notes: lead?.notes ?? null,
+  }
+
+  const systemPrompt = buildSystemPrompt(clinic.name, config, treatments, isOpen, currentStage, clientName, clientContext)
   const conversation = formatHistory(history)
   const last = conversation[conversation.length - 1]
   if (!last || last.content !== incomingMessage) {
@@ -667,6 +737,13 @@ export async function generateAgentResponse(
 
   await supabase.from('leads').update(leadUpdate).eq('id', leadId)
 
+  // Notify owner on new escalation (only if transitioning into escalated)
+  if (finalStage === 'escalated' && lead?.conversation_stage !== 'escalated') {
+    const reason = forceEscalate ? 'objection_limit' : (analysis.escalation_reason ?? 'ai_decision')
+    const leadName = analysis.client_name ?? lead?.name ?? null
+    notifyOwner(clinicId, escalationMessage(leadName, lead?.phone ?? '', reason, leadId), supabase).catch(() => {})
+  }
+
   // --- Persistencia de cita --------------------------------------------------
   // El orden importa. Si la conversación se está CONFIRMANDO, confirmamos la cita
   // pendiente y NO creamos una nueva (evita duplicados). Solo si no estamos
@@ -696,9 +773,11 @@ export async function generateAgentResponse(
 
   if (isConfirming) {
     const pendingAppt = await findPendingAppt()
+    const leadName = lead?.name ?? null
+
     if (pendingAppt) {
       // Auto-confirmación: el cliente ha dicho que sí.
-      await supabase
+      const { data: apptData } = await supabase
         .from('appointments')
         .update({
           status: 'confirmada',
@@ -706,14 +785,22 @@ export async function generateAgentResponse(
           confirmed_at: new Date().toISOString(),
         })
         .eq('id', pendingAppt.id)
+        .select('appointment_date, treatment:treatments(name)')
+        .single()
+
+      if (apptData) {
+        const treatmentName = ((apptData.treatment as unknown) as { name: string } | null)?.name ?? null
+        notifyOwner(clinicId, appointmentConfirmedMessage(leadName, treatmentName, apptData.appointment_date, leadId), supabase).catch(() => {})
+      }
     } else if (isOpen && analysis.proposed_appointment?.preferred_date_iso) {
       // Propuesta y confirmación en el mismo turno: crear ya confirmada.
       const apptISO = normalizeProposedDate(analysis.proposed_appointment.preferred_date_iso)
       if (apptISO && new Date(apptISO) > new Date()) {
+        const treatment = matchTreatment(analysis.proposed_appointment.treatment_name)
         await supabase.from('appointments').insert({
           lead_id: leadId,
           clinic_id: clinicId,
-          treatment_id: matchTreatment(analysis.proposed_appointment.treatment_name)?.id ?? null,
+          treatment_id: treatment?.id ?? null,
           appointment_date: apptISO,
           status: 'confirmada',
           notes: `Agendada por agente IA. ${analysis.proposed_appointment.notes ?? ''}`.trim(),
@@ -721,6 +808,7 @@ export async function generateAgentResponse(
           requires_human_confirmation: false,
           confirmed_at: new Date().toISOString(),
         })
+        notifyOwner(clinicId, appointmentConfirmedMessage(leadName, treatment?.name ?? null, apptISO, leadId), supabase).catch(() => {})
       }
     }
   } else if (isOpen && analysis.proposed_appointment?.preferred_date_iso) {

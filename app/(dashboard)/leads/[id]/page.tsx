@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
-import { getCurrentClinicId, getLead } from '@/lib/actions'
+import { getCurrentClinicId, getLead, getLeadTimeline, getTreatments } from '@/lib/actions'
 import { LeadSidebarActions } from '@/components/leads/LeadSidebarActions'
 import { LeadNameEditor } from '@/components/leads/LeadNameEditor'
 import { ConversationPanel } from '@/components/leads/ConversationPanel'
 import { AppointmentPanel } from '@/components/leads/AppointmentPanel'
+import { ActivityTimeline } from '@/components/leads/ActivityTimeline'
 import { formatDate, formatRelativeTime } from '@/lib/utils'
 import type { LeadQualification } from '@/lib/types'
 
@@ -31,6 +32,10 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
   if (!result) redirect('/leads')
 
   const { lead, messages } = result
+  const [timelineEvents, treatments] = await Promise.all([
+    getLeadTimeline(params.id, clinicId),
+    getTreatments(clinicId),
+  ])
   const qualif = QUALIF[lead.qualification] ?? QUALIF.frio
   const initial = (lead.name ?? lead.phone).charAt(0).toUpperCase()
 
@@ -120,7 +125,11 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
           <AppointmentPanel
             appointments={lead.appointments ?? []}
             clinicId={clinicId}
+            leadId={lead.id}
+            treatments={treatments}
           />
+
+          <ActivityTimeline events={timelineEvents} />
         </div>
 
         {/* Right panel — conversation */}

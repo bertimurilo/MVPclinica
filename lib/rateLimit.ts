@@ -36,7 +36,7 @@ export async function rateLimit(
     .lt('window_start', new Date(Date.now() - 60 * 60 * 1000).toISOString())
     .then(() => {})
 
-  if (count > options.limit) {
+  if (count >= options.limit) {
     return { success: false, remaining: 0 }
   }
   return { success: true, remaining: options.limit - count }

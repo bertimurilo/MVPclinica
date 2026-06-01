@@ -32,6 +32,21 @@ export function ClinicTab({ clinic }: Props) {
         </div>
       </Section>
 
+      <Section title="Notificaciones">
+        <div className="space-y-3">
+          <Input
+            label="Número para alertas (WhatsApp)"
+            name="notification_phone"
+            type="tel"
+            defaultValue={clinic?.notification_phone ?? ''}
+            placeholder="+34612345678"
+          />
+          <p className="text-xs text-gray-500">
+            Recibirás un WhatsApp cuando un lead se escale, confirme una cita o escriba fuera de horario. Incluye el prefijo internacional.
+          </p>
+        </div>
+      </Section>
+
       <div className="flex items-center gap-3">
         <SaveButton pending={isPending} />
         {status === 'saved' && <span className="text-sm text-violet-400">Cambios guardados</span>}

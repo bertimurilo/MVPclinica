@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js'
 import { env } from '@/lib/env'
 import { generateAgentResponse, isWithinBusinessHours } from '@/lib/agent'
 import { sendMessage, normalizePhone } from '@/lib/zapi'
+import { notifyOwner, outOfHoursMessage } from '@/lib/notifications'
 import type { AgentConfig } from '@/lib/types'
 import { rateLimit } from '@/lib/rateLimit'
 
@@ -207,6 +208,22 @@ async function processInbound({
       out_of_hours: !isOpen,
       created_at: inboundCreatedAt,
     })
+
+    // 5b. Notify owner on out-of-hours messages (max 1 per lead per hour to avoid spam)
+    if (!isOpen) {
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+      const { count } = await supabase
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('lead_id', leadId)
+        .eq('out_of_hours', true)
+        .gte('created_at', oneHourAgo)
+
+      if ((count ?? 0) <= 1) {
+        const leadName = existingLead ? (existingLead as { id: string; name: string | null }).name : contactName
+        notifyOwner(clinicId, outOfHoursMessage(leadName, normalizedPhone, text, leadId), supabase).catch(() => {})
+      }
+    }
 
     // 6. Generate AI response
     const FALLBACK_MESSAGE =

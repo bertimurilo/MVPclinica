@@ -10,8 +10,7 @@
     "sim": "tsx scripts/sim-conversation.ts",
     "sim:setup": "tsx scripts/sim-setup-testclinic.ts",
     "seed:appointments": "tsx scripts/seed-appointments.ts",
-    "cancel:appointments": "tsx scripts/cancel-appointments.ts",
-    "auth:google-calendar": "tsx scripts/auth-google-calendar.ts"
+    "cancel:appointments": "tsx scripts/cancel-appointments.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.1",
@@ -19,7 +18,6 @@
     "@supabase/supabase-js": "^2.49.4",
     "@vercel/functions": "^3.6.0",
     "clsx": "^2.1.1",
-    "googleapis": "^172.0.0",
     "lru-cache": "^11.3.6",
     "next": "^14.2.0",
     "openai": "^6.37.0",

@@ -304,7 +304,42 @@ export async function updateWhatsAppStatus(connected: boolean) {
   return { success: true }
 }
 
+// ─── Treatments (read) ────────────────────────────────────────────────────────
+
+export async function getTreatments(clinicId: string) {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from('treatments')
+    .select('id, name, price, duration_minutes')
+    .eq('clinic_id', clinicId)
+    .is('deleted_at', null)
+    .eq('active', true)
+    .order('name')
+  return data ?? []
+}
+
 // ─── Appointments ─────────────────────────────────────────────────────────────
+
+export async function createAppointment(
+  leadId: string,
+  clinicId: string,
+  payload: { treatment_id?: string; appointment_date?: string; notes?: string }
+) {
+  await assertClinicActive(clinicId)
+  const supabase = createServiceClient()
+  const { error } = await supabase.from('appointments').insert({
+    lead_id: leadId,
+    clinic_id: clinicId,
+    status: 'agendada',
+    proposed_by: 'human',
+    requires_human_confirmation: false,
+    treatment_id: payload.treatment_id || null,
+    appointment_date: payload.appointment_date || null,
+    notes: payload.notes || null,
+  })
+  if (error) throw new Error(error.message)
+  revalidatePath('/leads')
+}
 
 export async function updateAppointmentStatus(
   appointmentId: string,
@@ -313,9 +348,14 @@ export async function updateAppointmentStatus(
 ) {
   await assertClinicActive(clinicId)
   const supabase = createServiceClient()
+  const patch: Record<string, unknown> = { status }
+  if (status === 'confirmada') {
+    patch.requires_human_confirmation = false
+    patch.confirmed_at = new Date().toISOString()
+  }
   const { error } = await supabase
     .from('appointments')
-    .update({ status })
+    .update(patch)
     .eq('id', appointmentId)
     .eq('clinic_id', clinicId)
   if (error) throw new Error(error.message)
@@ -336,6 +376,101 @@ export async function getAppointmentsByMonth(clinicId: string, year: number, mon
     .order('appointment_date')
 
   return data ?? []
+}
+
+export async function getLeadTimeline(leadId: string, clinicId: string) {
+  const supabase = createClient()
+
+  const [leadRes, messagesRes, appointmentsRes] = await Promise.all([
+    supabase
+      .from('leads')
+      .select('created_at, escalated, escalation_reset_at')
+      .eq('id', leadId)
+      .eq('clinic_id', clinicId)
+      .single(),
+    supabase
+      .from('messages')
+      .select('created_at, direction')
+      .eq('lead_id', leadId)
+      .eq('clinic_id', clinicId)
+      .order('created_at'),
+    supabase
+      .from('appointments')
+      .select('id, created_at, confirmed_at, appointment_date, status, treatment:treatments(name)')
+      .eq('lead_id', leadId)
+      .eq('clinic_id', clinicId)
+      .order('created_at'),
+  ])
+
+  const lead = leadRes.data
+  const messages = messagesRes.data ?? []
+  const appointments = appointmentsRes.data ?? []
+
+  const events: import('@/lib/types').TimelineEvent[] = []
+
+  // First contact
+  if (lead?.created_at) {
+    events.push({ type: 'lead_created', timestamp: lead.created_at, label: 'Primer contacto' })
+  }
+
+  // Messages grouped by day
+  const dayMap: Record<string, number> = {}
+  for (const msg of messages) {
+    const day = msg.created_at.slice(0, 10)
+    dayMap[day] = (dayMap[day] ?? 0) + 1
+  }
+  for (const [day, count] of Object.entries(dayMap)) {
+    const date = new Date(day + 'T12:00:00Z')
+    const label = date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+    events.push({
+      type: 'messages_day',
+      timestamp: day + 'T00:00:00.000Z',
+      label: `${count} mensaje${count !== 1 ? 's' : ''}`,
+      detail: label,
+    })
+  }
+
+  // Appointments
+  for (const appt of appointments) {
+    const treatmentName = ((appt.treatment as unknown) as { name: string } | null)?.name ?? null
+
+    events.push({
+      type: 'appointment_proposed',
+      timestamp: appt.created_at,
+      label: 'Cita propuesta',
+      detail: treatmentName ?? undefined,
+    })
+
+    if (appt.status === 'confirmada' && appt.confirmed_at) {
+      events.push({
+        type: 'appointment_confirmed',
+        timestamp: appt.confirmed_at,
+        label: 'Cita confirmada',
+        detail: treatmentName ?? undefined,
+      })
+    }
+
+    if (appt.status === 'cancelada') {
+      events.push({
+        type: 'appointment_cancelled',
+        timestamp: appt.created_at,
+        label: 'Cita cancelada',
+        detail: treatmentName ?? undefined,
+      })
+    }
+  }
+
+  // Escalation state
+  if (lead?.escalated) {
+    events.push({ type: 'escalated', timestamp: new Date().toISOString(), label: 'Escalado a humano' })
+  }
+  if (lead?.escalation_reset_at) {
+    events.push({ type: 'escalation_reset', timestamp: lead.escalation_reset_at, label: 'Devuelto al agente IA' })
+  }
+
+  events.sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+
+  return events
 }
 
 export async function getEstimatedRevenue(clinicId: string) {
