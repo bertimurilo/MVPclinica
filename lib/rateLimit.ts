@@ -33,7 +33,7 @@ export async function rateLimit(
   supabase
     .from('rate_limit_windows')
     .delete()
-    .lt('window_start', new Date(Date.now() - 60 * 60 * 1000).toISOString())
+    .lt('window_start', new Date(Date.now() - 5 * 60 * 1000).toISOString())
     .then(() => {})
 
   if (count >= options.limit) {
