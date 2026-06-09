@@ -67,9 +67,11 @@ const makeNav = (): NavItem[] => [
 interface SidebarProps {
   clinicName: string
   leadsCount?: number
+  isOpen?: boolean
+  onClose?: () => void
 }
 
-export default function Sidebar({ clinicName, leadsCount = 0 }: SidebarProps) {
+export default function Sidebar({ clinicName, leadsCount = 0, isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const navItems = makeNav()
@@ -85,7 +87,15 @@ export default function Sidebar({ clinicName, leadsCount = 0 }: SidebarProps) {
 
   return (
     <aside
-      className="w-56 shrink-0 h-screen flex flex-col relative"
+      className={cn(
+        // Mobile: fixed drawer from left
+        'fixed inset-y-0 left-0 z-50 w-56 shrink-0 flex flex-col',
+        'transition-transform duration-300 ease-in-out',
+        // Desktop: back in flex flow, always visible
+        'md:static md:z-auto md:h-screen md:translate-x-0',
+        // Mobile visibility controlled by isOpen
+        isOpen ? 'translate-x-0' : '-translate-x-full',
+      )}
       style={{
         background: 'linear-gradient(180deg, #080f1e 0%, #060c18 100%)',
         borderRight: '1px solid rgba(255,255,255,0.06)',
@@ -107,6 +117,17 @@ export default function Sidebar({ clinicName, leadsCount = 0 }: SidebarProps) {
             <p className="text-sm font-semibold text-white leading-none tracking-[-0.01em]">Venu</p>
             <p className="text-[11px] text-gray-500 truncate mt-0.5">{clinicName}</p>
           </div>
+          {/* Close button — only on mobile */}
+          <button
+            className="md:hidden ml-auto w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:text-gray-300 hover:bg-white/[0.06] transition-all"
+            onClick={onClose}
+            aria-label="Cerrar menú"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -123,6 +144,7 @@ export default function Sidebar({ clinicName, leadsCount = 0 }: SidebarProps) {
               <Link
                 key={`${item.href}-${i}`}
                 href={item.href}
+                onClick={onClose}
                 className={cn(
                   'relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all duration-150',
                   active
@@ -187,6 +209,7 @@ export default function Sidebar({ clinicName, leadsCount = 0 }: SidebarProps) {
               <Link
                 key={href}
                 href={href}
+                onClick={onClose}
                 className={cn(
                   'relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all duration-150',
                   active

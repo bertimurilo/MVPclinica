@@ -148,7 +148,7 @@ export function AgentTab({ config }: Props) {
       <Section title="Horario de atención">
         <div className="space-y-2">
           {DAYS.map(day => (
-            <div key={day.key} className="flex items-center gap-4 py-1">
+            <div key={day.key} className="flex flex-col md:flex-row md:items-center md:gap-4 py-1">
               {/* Toggle */}
               <label className="flex items-center gap-3 cursor-pointer shrink-0">
                 <input
@@ -164,7 +164,7 @@ export function AgentTab({ config }: Props) {
 
               {/* Time inputs */}
               {enabledDays[day.key] ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 pl-12 md:pl-0">
                   <input
                     type="time"
                     name={`bh_${day.key}_open`}
@@ -180,7 +180,7 @@ export function AgentTab({ config }: Props) {
                   />
                 </div>
               ) : (
-                <span className="text-xs text-gray-600">Cerrado</span>
+                <span className="text-xs text-gray-600 pl-12 md:pl-0">Cerrado</span>
               )}
             </div>
           ))}

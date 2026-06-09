@@ -19,7 +19,7 @@ export function StatsCard({ title, value, change, trend = 'neutral', icon }: Sta
 
   return (
     <div
-      className="rounded-xl p-5 flex flex-col relative overflow-hidden group cursor-default"
+      className="rounded-xl p-3 sm:p-5 flex flex-col relative overflow-hidden group cursor-default"
       style={{
         background: 'linear-gradient(150deg, #0e1628 0%, #0b1020 100%)',
         border: '1px solid rgba(255,255,255,0.07)',
@@ -50,13 +50,13 @@ export function StatsCard({ title, value, change, trend = 'neutral', icon }: Sta
         )}
       </div>
 
-      <p className="text-[2rem] font-bold text-white tracking-tight leading-none relative">
+      <p className="text-2xl sm:text-3xl font-bold text-white tracking-tight leading-none relative">
         {value}
       </p>
 
       {change && (
         <span
-          className="self-start inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full mt-3 relative"
+          className="self-start inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full mt-3 relative"
           style={{ background: t.bg, border: `1px solid ${t.border}`, color: t.color }}
         >
           {t.arrow} {change}

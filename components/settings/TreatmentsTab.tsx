@@ -91,8 +91,8 @@ export function TreatmentsTab({ treatments }: { treatments: Treatment[] }) {
         )}
       </div>
 
-      {/* Table */}
-      <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
+      {/* Table — desktop only */}
+      <div className="hidden md:block bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
         {/* Column headers */}
         <div className="grid grid-cols-[1fr_80px_80px_120px_60px_100px] gap-3 px-4 py-2.5 border-b border-gray-700 text-xs font-medium text-gray-500 uppercase tracking-wide">
           <span>Nombre</span>
@@ -182,6 +182,112 @@ export function TreatmentsTab({ treatments }: { treatments: Treatment[] }) {
             <EditRow state={editing!} onChange={setEditing} onSave={handleSave} onCancel={() => setEditing(null)} pending={isPending} isNew />
           )}
         </div>
+      </div>
+
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-2">
+        {treatments.length === 0 && !isAddingNew && (
+          <div className="px-4 py-10 text-center rounded-xl bg-gray-800 border border-gray-700">
+            <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mx-auto mb-3">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+            </div>
+            <p className="text-sm text-gray-400 font-medium">Sin tratamientos</p>
+            <p className="text-xs text-gray-600 mt-1">Añade los servicios que ofrece tu clínica</p>
+            <button
+              onClick={() => setEditing(BLANK)}
+              className="mt-4 px-4 py-2 text-sm font-medium rounded-lg bg-violet-600 hover:bg-violet-700 text-white transition-colors"
+            >
+              Añadir primer tratamiento
+            </button>
+          </div>
+        )}
+
+        {treatments.map(t => {
+          const isEditing = editing?.id === t.id
+          const isDeleting = deleteConfirm === t.id
+
+          if (isEditing) {
+            return (
+              <EditRow
+                key={t.id}
+                state={editing!}
+                onChange={setEditing}
+                onSave={handleSave}
+                onCancel={() => setEditing(null)}
+                pending={isPending}
+              />
+            )
+          }
+
+          return (
+            <div key={t.id} className="rounded-xl bg-gray-800 border border-gray-700 p-4">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-white">{t.name}</p>
+                  {t.description && (
+                    <p className="text-xs text-gray-500 mt-0.5 truncate">{t.description}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 ml-3 shrink-0">
+                  {isDeleting ? (
+                    <>
+                      <button
+                        onClick={() => handleDelete(t.id)}
+                        disabled={isPending}
+                        className="text-xs text-red-400 hover:text-red-300 font-medium disabled:opacity-50"
+                      >
+                        {isPending ? '...' : 'Sí, borrar'}
+                      </button>
+                      <button onClick={() => setDeleteConfirm(null)} className="text-xs text-gray-500 hover:text-gray-300">No</button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => { setDeleteConfirm(null); startEdit(t) }}
+                        className="text-xs text-gray-400 hover:text-white transition-colors"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirm(t.id)}
+                        className="text-xs text-gray-600 hover:text-red-400 transition-colors"
+                      >
+                        Borrar
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <div>
+                  <p className="text-[10px] text-gray-600 uppercase tracking-wide">Precio</p>
+                  <p className="text-sm text-gray-300 mt-0.5">{t.price != null ? `${t.price}€` : '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-600 uppercase tracking-wide">Duración</p>
+                  <p className="text-sm text-gray-300 mt-0.5">{t.duration_minutes != null ? `${t.duration_minutes}m` : '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-600 uppercase tracking-wide">Categoría</p>
+                  <p className="text-sm text-gray-300 mt-0.5 truncate">{t.category || '—'}</p>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+
+        {isAddingNew && (
+          <EditRow
+            state={editing!}
+            onChange={setEditing}
+            onSave={handleSave}
+            onCancel={() => setEditing(null)}
+            pending={isPending}
+            isNew
+          />
+        )}
       </div>
 
       {showImport && (

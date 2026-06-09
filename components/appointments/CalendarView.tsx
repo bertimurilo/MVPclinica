@@ -135,7 +135,7 @@ export function CalendarView({ appointments, month, year }: Props) {
   const selectedAppointments = selectedDay ? dayAppointments(selectedDay) : []
 
   return (
-    <div className="flex gap-6">
+    <div className="flex flex-col lg:flex-row gap-6">
       {/* Calendar grid */}
       <div className="flex-1 min-w-0">
         {/* Header */}
@@ -183,7 +183,7 @@ export function CalendarView({ appointments, month, year }: Props) {
                 <button
                   key={i}
                   onClick={() => cell.currentMonth && setSelectedDay(cell.day === selectedDay ? null : cell.day)}
-                  className={`min-h-[90px] p-2 border-b border-r border-gray-700/50 text-left transition-colors ${
+                  className={`min-h-[60px] sm:min-h-[90px] p-1 sm:p-2 border-b border-r border-gray-700/50 text-left transition-colors ${
                     !cell.currentMonth ? 'opacity-30 cursor-default' :
                     isSelected ? 'bg-violet-500/10' :
                     'hover:bg-gray-700/40 cursor-pointer'
@@ -232,9 +232,9 @@ export function CalendarView({ appointments, month, year }: Props) {
         )}
       </div>
 
-      {/* Day panel */}
+      {/* Day panel — full width on mobile, fixed sidebar on desktop */}
       {selectedDay && (
-        <div className="w-80 shrink-0">
+        <div className="w-full lg:w-80 lg:shrink-0">
           <h3 className="text-sm font-semibold text-white mb-3">
             {selectedDay} de {MONTH_NAMES[month - 1]}
           </h3>

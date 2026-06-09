@@ -107,7 +107,7 @@ export function PaywallScreen() {
 
           {/* Features */}
           <div className="px-6 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
               {[col1, col2].map((col, ci) =>
                 col.map((f, i) => (
                   <div key={`${ci}-${i}`} className="flex items-center gap-2 text-sm text-gray-400">

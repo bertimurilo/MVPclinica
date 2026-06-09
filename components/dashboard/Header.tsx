@@ -8,9 +8,14 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
   '/inbox':         { title: 'Inbox',                    subtitle: 'Conversaciones activas' },
   '/appointments':  { title: 'Citas',                    subtitle: 'Agenda de la clínica' },
   '/settings':      { title: 'Ajustes',                  subtitle: 'Configuración de la clínica' },
+  '/billing':       { title: 'Facturación',              subtitle: 'Plan y consumo' },
 }
 
-export default function Header() {
+interface HeaderProps {
+  onMenuToggle: () => void
+}
+
+export default function Header({ onMenuToggle }: HeaderProps) {
   const pathname = usePathname()
 
   const matched = Object.entries(pageTitles).find(
@@ -20,7 +25,7 @@ export default function Header() {
 
   return (
     <header
-      className="h-14 px-6 flex items-center justify-between shrink-0 sticky top-0 z-20"
+      className="h-14 px-4 md:px-6 flex items-center justify-between shrink-0 sticky top-0 z-20"
       style={{
         background: 'rgba(3,7,18,0.80)',
         backdropFilter: 'blur(14px) saturate(160%)',
@@ -28,13 +33,28 @@ export default function Header() {
         borderBottom: '1px solid rgba(255,255,255,0.06)',
       }}
     >
-      <div>
-        <h1 className="text-sm font-semibold text-white leading-none tracking-[-0.01em]">
-          {page.title}
-        </h1>
-        {page.subtitle && (
-          <p className="text-[11px] text-gray-600 mt-[3px] leading-none">{page.subtitle}</p>
-        )}
+      <div className="flex items-center gap-3">
+        {/* Hamburger — visible only on mobile */}
+        <button
+          className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-200 hover:bg-white/[0.06] transition-all"
+          onClick={onMenuToggle}
+          aria-label="Abrir menú"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+
+        <div>
+          <h1 className="text-sm font-semibold text-white leading-none tracking-[-0.01em]">
+            {page.title}
+          </h1>
+          {page.subtitle && (
+            <p className="text-[11px] text-gray-600 mt-[3px] leading-none">{page.subtitle}</p>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-1.5">

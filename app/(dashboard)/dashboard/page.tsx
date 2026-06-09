@@ -108,23 +108,23 @@ export default async function DashboardPage() {
 
   return (
     <ErrorBoundary>
-    <div className="space-y-5">
+    <div className="space-y-3 sm:space-y-4">
 
       {/* Page header */}
       <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-600 mb-1">
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-600 mb-1">
             {getGreeting()}
           </p>
-          <h2 className="text-lg font-semibold text-white tracking-[-0.02em] leading-none">
+          <h2 className="text-xl sm:text-2xl font-semibold text-white tracking-[-0.02em] leading-none">
             Resumen del día
           </h2>
-          <p className="text-xs text-gray-600 mt-1 capitalize">{formatDate()}</p>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1 capitalize">{formatDate()}</p>
         </div>
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
         <StatsCard
           title="Citas esta semana"
           value={stats.citas_semana}
@@ -226,11 +226,11 @@ export default async function DashboardPage() {
                   <Link
                     key={l.id}
                     href={`/leads/${l.id}`}
-                    className="px-5 py-3.5 flex items-center gap-4 hover:bg-white/[0.025] transition-colors block"
+                    className="px-3 sm:px-5 py-2.5 sm:py-3.5 flex items-center gap-3 sm:gap-4 hover:bg-white/[0.025] transition-colors block"
                     style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
                   >
                     <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                      className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
                       style={{ background: 'rgba(124,58,237,0.18)', border: '1px solid rgba(124,58,237,0.30)', color: '#a78bfa' }}
                     >
                       {initial}
@@ -316,11 +316,11 @@ export default async function DashboardPage() {
             </svg>
           </Link>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-white/[0.04]">
-          {PIPELINE_COLS.map(col => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-x divide-white/[0.04]">
+          {PIPELINE_COLS.map((col, i) => {
             const colLeads = pipelineByStatus[col.key] ?? []
             return (
-              <div key={col.key} className="p-4">
+              <div key={col.key} className={`p-4${i > 0 ? ' hidden sm:block' : ''}`}>
                 <div className="flex items-center gap-2 mb-3">
                   <span
                     className={`w-1.5 h-1.5 rounded-full ${col.dot} shrink-0`}

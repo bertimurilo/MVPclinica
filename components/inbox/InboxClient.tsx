@@ -89,11 +89,14 @@ export function InboxClient({ clinicId, initialLeads }: InboxClientProps) {
 
   return (
     <div
-      className="h-[calc(100vh-8.5rem)] rounded-xl overflow-hidden flex"
+      className="h-[calc(100dvh-8.5rem)] rounded-xl overflow-hidden flex flex-col md:flex-row"
       style={{ background: '#0e1628', border: '1px solid rgba(255,255,255,0.07)' }}
     >
-      {/* Left panel — conversation list */}
-      <div className="w-72 shrink-0 flex flex-col" style={{ borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+      {/* Left panel — conversation list (full width on mobile, fixed width on desktop) */}
+      <div
+        className={`flex flex-col md:w-72 md:shrink-0 ${selectedLeadId ? 'hidden md:flex' : 'flex w-full'}`}
+        style={{ borderRight: '1px solid rgba(255,255,255,0.06)' }}
+      >
         <div className="px-4 py-3.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <p className="text-sm font-semibold text-white">Inbox</p>
           <p className="text-xs text-gray-500 mt-0.5">{leads.length} conversaciones</p>
@@ -159,8 +162,8 @@ export function InboxClient({ clinicId, initialLeads }: InboxClientProps) {
         </div>
       </div>
 
-      {/* Right panel — thread */}
-      <div className="flex-1 min-w-0 flex flex-col">
+      {/* Right panel — thread (hidden on mobile when no lead selected) */}
+      <div className={`flex-1 min-w-0 flex-col ${selectedLeadId ? 'flex' : 'hidden md:flex'}`}>
         {!selectedLeadId ? (
           <EmptySelect />
         ) : loadingMessages ? (
@@ -168,8 +171,18 @@ export function InboxClient({ clinicId, initialLeads }: InboxClientProps) {
         ) : (
           <>
             {/* Header */}
-            <div className="px-5 py-3.5 flex items-center justify-between shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="px-4 md:px-5 py-3.5 flex items-center justify-between shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <div className="flex items-center gap-3">
+                {/* Back button — mobile only */}
+                <button
+                  className="md:hidden w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-200 hover:bg-white/[0.06] transition-all"
+                  onClick={() => setSelectedLeadId(null)}
+                  aria-label="Volver a conversaciones"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
                   style={{ background: 'rgba(124,58,237,0.18)', border: '1px solid rgba(124,58,237,0.30)', color: '#a78bfa' }}

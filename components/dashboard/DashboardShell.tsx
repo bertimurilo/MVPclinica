@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Sidebar from './Sidebar'
 import Header from './Header'
@@ -17,12 +17,18 @@ interface Props {
 export function DashboardShell({ clinicName, leadsCount, isActive, hasCompletedOnboarding, children }: Props) {
   const pathname = usePathname()
   const router = useRouter()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     if (!hasCompletedOnboarding && pathname === '/dashboard') {
       router.replace('/onboarding')
     }
   }, [hasCompletedOnboarding, pathname, router])
+
+  // Close sidebar on route change
+  useEffect(() => {
+    setSidebarOpen(false)
+  }, [pathname])
 
   if (pathname === '/onboarding') {
     return (
@@ -34,13 +40,28 @@ export function DashboardShell({ clinicName, leadsCount, isActive, hasCompletedO
 
   return (
     <>
-      <Sidebar clinicName={clinicName} leadsCount={leadsCount} />
+      {/* Mobile overlay backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <Sidebar
+        clinicName={clinicName}
+        leadsCount={leadsCount}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
-        <Header />
-        <main className="flex-1 overflow-y-auto p-6">
+        <Header onMenuToggle={() => setSidebarOpen(o => !o)} />
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6">
           {children}
         </main>
       </div>
+
       {!isActive && <PaywallScreen />}
     </>
   )

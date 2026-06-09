@@ -55,7 +55,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: '#030712' }}>
+    <div className="flex h-[100dvh] overflow-hidden" style={{ background: '#030712' }}>
       {/* Ambient glows */}
       <div
         className="pointer-events-none fixed inset-0 z-0"
