@@ -392,6 +392,20 @@ async function processInbound({
       responses = result.responses
     }
 
+    // Re-check tras generar (tarda varios segundos): si mientras tanto llegó
+    // otro mensaje del lead, descartamos esta respuesta sin enviarla — el
+    // handler del mensaje nuevo responderá una sola vez con el contexto
+    // completo. Extiende la cobertura del debounce a toda la generación.
+    const { data: newerAfterGen } = await supabase
+      .from('messages')
+      .select('id')
+      .eq('lead_id', leadId)
+      .eq('direction', 'inbound')
+      .gt('created_at', inboundCreatedAt)
+      .limit(1)
+      .maybeSingle()
+    if (newerAfterGen) return
+
     // 7. Send each message via Z-API with a human-like delay between them
     const responseTimeSec = Math.round(
       (Date.now() - new Date(inboundCreatedAt).getTime()) / 1000
