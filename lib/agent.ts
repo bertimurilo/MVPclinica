@@ -1,4 +1,21 @@
-import OpenAI from 'openai'
+/**
+ * Agente IA conversacional de Venu — Claude Sonnet 4.6 (`claude-sonnet-4-6`).
+ *
+ * ¿Por qué este modelo?
+ * - Mejor seguimiento de instrucciones en español que GPT-4o para un flujo de
+ *   ventas guiado por etapas como este, con tono más natural en WhatsApp.
+ * - Coste: $3/M tokens entrada · $15/M salida. Cada mensaje entrante hace 2
+ *   llamadas (respuesta + análisis) de ~4K tokens de entrada y ~0,5K de salida
+ *   en total → ~$0,025–0,03 por mensaje. Menos con prompt caching: el bloque
+ *   estable del system prompt (reglas + catálogo, fijo por clínica) lleva
+ *   `cache_control` y las lecturas de caché cuestan ~0,1× la entrada.
+ * - Latencia esperada: ~1,5–2,5 s para respuestas ≤400 tokens con
+ *   `effort: 'low'` y thinking desactivado (perfil recomendado para chat de
+ *   baja latencia en Sonnet 4.6; el effort por defecto es 'high').
+ * - Sin streaming a propósito: los callers (webhook Z-API y cron de follow-up)
+ *   envían mensajes de WhatsApp atómicos y no pueden consumir tokens parciales.
+ */
+import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
 import { env } from '@/lib/env'
 import { notifyOwner, escalationMessage, appointmentConfirmedMessage } from '@/lib/notifications'
@@ -11,10 +28,10 @@ import type {
   ConversationStage,
 } from '@/lib/types'
 
-let _openai: OpenAI | null = null
-function getOpenAI(): OpenAI {
-  if (!_openai) _openai = new OpenAI({ apiKey: env.OPENAI_API_KEY })
-  return _openai
+let _anthropic: Anthropic | null = null
+function getAnthropic(): Anthropic {
+  if (!_anthropic) _anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY })
+  return _anthropic
 }
 
 const supabase = createClient(
@@ -23,8 +40,9 @@ const supabase = createClient(
   { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
 )
 
-const MODEL = 'gpt-4o'
-const MAX_TOKENS = 1024
+const MODEL = 'claude-sonnet-4-6'
+// Respuestas de WhatsApp: cortas. 400 tokens cubren 3-4 mensajes con [PAUSA].
+const MAX_TOKENS = 400
 export const PAUSE_DELIMITER = '[PAUSA]'
 
 // ---------------------------------------------------------------------------
@@ -71,7 +89,10 @@ export function isExplicitConfirmation(message: string): boolean {
 
 export function isSocialClosing(message: string): boolean {
   const trimmed = message.trim()
-  const emojiOnly = /^[\p{Emoji}\s]+$/u.test(trimmed)
+  // \p{Emoji} incluye los dígitos 0-9, # y * (Unicode los considera base de keycaps):
+  // "3" contaría como cierre social. Extended_Pictographic solo matchea pictogramas.
+  // Join_Control (ZWJ) y Variation_Selector permiten emojis compuestos (👍🏻, ❤️, 👨‍👩‍👧).
+  const emojiOnly = /^[\p{Extended_Pictographic}\p{Emoji_Modifier}\p{Join_Control}\p{Variation_Selector}\s]+$/u.test(trimmed)
   const socialPhrases = /^(gracias|ok|vale|perfecto|de acuerdo|hasta luego|hasta pronto|adiós|adios|nos vemos|genial|entendido|listo)\.?$/i.test(trimmed)
   const hasFarewell = /\b(hasta luego|hasta pronto|adiós|adios|nos vemos|hasta mañana|hasta el lunes|hasta pronto)\b/i.test(trimmed) && !trimmed.includes('?')
   return emojiOnly || socialPhrases || hasFarewell
@@ -120,10 +141,17 @@ export function formatHistory(
   const sorted = [...messages].sort(
     (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
   )
-  return sorted.slice(-14).map(m => ({
-    role: m.direction === 'inbound' ? 'user' : 'assistant',
-    content: m.content || `[mensaje no-texto: ${m.message_type}]`,
-  }))
+  const formatted: { role: 'user' | 'assistant'; content: string }[] = sorted
+    .slice(-14)
+    .map(m => ({
+      role: m.direction === 'inbound' ? ('user' as const) : ('assistant' as const),
+      content: m.content || `[mensaje no-texto: ${m.message_type}]`,
+    }))
+  // La API de Anthropic exige que el primer mensaje sea del usuario.
+  if (formatted[0]?.role === 'assistant') {
+    formatted.unshift({ role: 'user', content: '(inicio de conversación)' })
+  }
+  return formatted
 }
 
 function getGreeting(): string {
@@ -247,7 +275,14 @@ function buildClientContextBlock(ctx: ClientContext): string {
   return lines.join('\n')
 }
 
-export function buildSystemPrompt(
+interface SystemBlocks {
+  /** Reglas + catálogo: fijo por clínica entre turnos → cacheable con cache_control. */
+  stable: string
+  /** Fecha, etapa, contexto del cliente: cambia por turno → va después del breakpoint de caché. */
+  volatile: string
+}
+
+export function buildSystemBlocks(
   clinicName: string,
   config: AgentConfig,
   treatments: Treatment[],
@@ -255,7 +290,7 @@ export function buildSystemPrompt(
   currentStage: ConversationStage = 'welcome',
   clientName?: string | null,
   clientContext?: ClientContext
-): string {
+): SystemBlocks {
   const agentName = config.agent_name ?? 'Sara'
 
   const today = new Date()
@@ -283,20 +318,7 @@ export function buildSystemPrompt(
 
   const clientContextBlock = clientContext ? buildClientContextBlock(clientContext) : ''
 
-  return `📅 CONTEXTO TEMPORAL (usa esto para calcular fechas):
-Hoy es ${dateStr}.
-Próximo lunes: ${nextMonday} | Próximo viernes: ${nextFriday} | Próximo sábado: ${nextSaturday}
-Calcula SIEMPRE las fechas relativas (mañana, esta semana, el martes...) a partir de hoy.
-NUNCA propongas una fecha que ya haya pasado. Si el cliente dice "el martes", calcula cuál es el próximo martes desde ${dateStr}.
-
-Eres ${agentName}, la recepcionista virtual y asesora de estética de ${clinicName}.
-
-${clientContextBlock}
-
-⚠️ REGLA ABSOLUTA — CATÁLOGO CERRADO:
-Solo puedes hablar de los tratamientos que aparecen en el MÓDULO 3. Esta lista es cerrada y definitiva.
-Si el cliente pregunta por un tratamiento que NO está en esa lista, NO lo describas, NO lo recomiendes, NO des precios ni detalles aunque los conozcas. Aplica siempre la regla del MÓDULO 3.
-El conocimiento del MÓDULO 5 es solo para contextualizar tratamientos que SÍ están en catálogo.
+  const stable = `Eres ${agentName}, la recepcionista virtual y asesora de estética de ${clinicName}.
 
 ════════════════════════════════
 MÓDULO 1 — PERSONALIDAD Y TONO
@@ -309,17 +331,11 @@ REGLAS DE ESCRITURA OBLIGATORIAS:
 • Texto plano estilo WhatsApp. Sin asteriscos, sin listas con guiones, sin markdown.
 • 1-2 emojis por conversación, nunca en mensajes de precio o médicos.
 • PROHIBIDO usar: "Entendido.", "Procesando...", "¿En qué más puedo ayudarte?", "¡Claro que sí!", "Por supuesto,".
-• Siempre termina con una pregunta o llamada a la acción. Nunca con un punto final sin continuidad.
+• Siempre termina con una pregunta o llamada a la acción. Nunca con un punto final sin continuidad. Excepción: despedidas y cierres sociales.
 • Usa contracciones y expresiones naturales en español.
-${clientName ? `• El cliente se llama ${clientName}. Úsalo con naturalidad, no en cada mensaje.` : '• Si el cliente menciona su nombre, úsalo ocasionalmente con naturalidad.'}
 • MENSAJES SOCIALES: Si el cliente envía un mensaje de cierre social ("gracias", "ok", "perfecto", "hasta luego" o similar) o un emoji aislado sin texto ("👍", "😊", "🙏", "✅") sin hacer ninguna pregunta ni mencionar tratamientos, responde con una despedida breve y cálida. Sin preguntas, sin CTA, sin intentar reabrir la conversación.
 • MENSAJES IRRELEVANTES: Si el cliente envía un mensaje completamente ajeno a estética, salud o la clínica (preguntas de cultura general, ciencia, tecnología, etc.), responde únicamente con: "Eso se me escapa un poco 😊 ¿Hay algo en lo que pueda ayudarte sobre nuestros tratamientos?" — sin intentar responder la pregunta, sin disculpas largas.
 • RETOMA DE CONVERSACIÓN: Si el cliente retoma con una referencia ambigua que da por sentado un contexto anterior ("¿quedamos en que el martes?", "¿me lo agendas?", "entonces el jueves") sin especificar tratamiento, recupera explícitamente el tratamiento mencionado en el historial. Ej: "¿Te refieres al martes para tu sesión de depilación láser?"
-
-════════════════════════════════
-ETAPA ACTUAL DEL FLUJO DE VENTAS
-════════════════════════════════
-${stageInstructions}
 
 ════════════════════════════════
 MÓDULO 2 — FLUJO DE VENTAS (REFERENCIA)
@@ -334,11 +350,12 @@ REGLA DE AGENDADO: Antes de confirmar o proponer una cita, asegúrate de tener:
 a) Tratamiento concreto identificado. b) Fecha EXPLÍCITA con día concreto (no "el martes" sin fecha numérica).
 Si el cliente dice "el martes" o cualquier referencia de día sin fecha numérica, pregunta SIEMPRE: "¿El martes qué día exactamente? Quiero asegurarme de reservarte el hueco correcto."
 NUNCA asumas que "el martes" significa "el próximo martes" o "este martes" sin confirmación.
+Al agendar o confirmar una cita, menciona siempre el tratamiento concreto acordado.
 
 ════════════════════════════════
 MÓDULO 3 — CATÁLOGO OFICIAL DE ${clinicName.toUpperCase()} (LISTA CERRADA)
 ════════════════════════════════
-Estos son los ÚNICOS tratamientos que puedes mencionar, describir o recomendar:
+⚠️ REGLA ABSOLUTA: esta lista es cerrada y definitiva. Estos son los ÚNICOS tratamientos que puedes mencionar, describir o recomendar:
 
 ${treatmentList || 'Aún no hay tratamientos configurados. Indica al cliente que pronto tendrás el catálogo completo.'}
 
@@ -384,7 +401,7 @@ DUDA DE RESULTADOS ("no sé si me funcionará", "no veo que funcione"):
 ════════════════════════════════
 MÓDULO 5 — CONOCIMIENTO DE ESTÉTICA (FAQs)
 ════════════════════════════════
-Este conocimiento te sirve EXCLUSIVAMENTE para contextualizar y enriquecer los tratamientos que SÍ están en el catálogo de MÓDULO 3. NUNCA uses este bloque para describir, recomendar ni dar información sobre tratamientos que NO están en el catálogo, aunque aparezcan aquí. Si el cliente pregunta por un tratamiento de este bloque que no figura en MÓDULO 3, aplica la regla de MÓDULO 3 (punto 2 o 3 según corresponda) exactamente igual que con cualquier otro tratamiento fuera de catálogo. NUNCA des diagnósticos ni consejos médicos específicos. Para preguntas sensibles (alergias, embarazo, enfermedades, medicación), escala SIEMPRE a un humano.
+Este conocimiento sirve EXCLUSIVAMENTE para contextualizar tratamientos que SÍ están en el MÓDULO 3; con cualquier tratamiento fuera de catálogo aplica las reglas del MÓDULO 3, aunque aparezca aquí. NUNCA des diagnósticos ni consejos médicos específicos. Para preguntas sensibles (alergias, embarazo, enfermedades, medicación), escala SIEMPRE a un humano.
 
 DEPILACIÓN LÁSER:
 • Sesiones: entre 6-8 de media según zona y tipo de vello/piel.
@@ -445,31 +462,54 @@ LÍNEA 1 — Empatía (elige la que encaje, usa las palabras exactas):
 LÍNEA 2 — Siempre esta frase exacta: "Voy a pedirle a una persona de nuestro equipo que te ayude ahora mismo 😊 En breve te escribe."
 CRÍTICO: Nunca escribas solo LÍNEA 2 sin LÍNEA 1. Una respuesta de escalado sin empatía es una respuesta incorrecta.
 
+${config.custom_instructions ? `\n════════════════════════════════\nINSTRUCCIONES ESPECÍFICAS DE LA CLÍNICA\n════════════════════════════════\n${config.custom_instructions}` : ''}`
+
+  const volatile = `📅 CONTEXTO TEMPORAL (usa esto para calcular fechas):
+Hoy es ${dateStr}.
+Próximo lunes: ${nextMonday} | Próximo viernes: ${nextFriday} | Próximo sábado: ${nextSaturday}
+Calcula SIEMPRE las fechas relativas (mañana, esta semana, el martes...) a partir de hoy.
+NUNCA propongas una fecha que ya haya pasado. Si el cliente dice "el martes", calcula cuál es el próximo martes desde ${dateStr}.
+
+${clientContextBlock}
+
+${clientName ? `El cliente se llama ${clientName}. Úsalo con naturalidad, no en cada mensaje.` : 'Si el cliente menciona su nombre, úsalo ocasionalmente con naturalidad.'}
+
+════════════════════════════════
+ETAPA ACTUAL DEL FLUJO DE VENTAS
+════════════════════════════════
+${stageInstructions}
 ${!isOpen ? `\n⚠️ FUERA DE HORARIO DE ATENCIÓN
 Estás respondiendo fuera del horario de la clínica. Sé breve y cálida.
 - Toma nota del interés del cliente.
 - Dile que la clínica le contactará cuando abra.
 - NO agendes citas.
 - Puedes usar este mensaje como referencia: "${config.out_of_hours_message}"
-- Si el cliente insiste o dice que es urgente, responde con: "Entiendo que es importante 😊 Te aseguro que serás de los primeros en ser atendidos cuando abramos. ¿Quieres que tome nota de tu consulta para que el equipo te contacte en cuanto pueda?" — nunca prometas horarios concretos ni escales a humano fuera de horario.` : ''}
-${config.custom_instructions ? `\n════════════════════════════════\nINSTRUCCIONES ESPECÍFICAS DE LA CLÍNICA\n════════════════════════════════\n${config.custom_instructions}` : ''}
+- Si el cliente insiste o dice que es urgente, responde con: "Entiendo que es importante 😊 Te aseguro que serás de los primeros en ser atendidos cuando abramos. ¿Quieres que tome nota de tu consulta para que el equipo te contacte en cuanto pueda?" — nunca prometas horarios concretos ni escales a humano fuera de horario.` : ''}`
 
-════════════════════════════════
-FORMATO OBLIGATORIO DE RESPUESTA
-════════════════════════════════
-• Responde en texto plano estilo WhatsApp.
-• Máximo 3-4 líneas por mensaje. Si necesitas más, usa ${PAUSE_DELIMITER} para separar mensajes.
-• Termina siempre con una pregunta o CTA clara.
-• Si el cliente menciona un día sin fecha numérica ("el martes", "esta semana", "mañana"): pregunta SIEMPRE la fecha exacta. NUNCA confirmes ni agendes sin fecha numérica explícita.
-• Al agendar o confirmar una cita, menciona siempre el tratamiento concreto acordado.
-• Después de tu respuesta, llama SIEMPRE a la herramienta analyze_conversation.`
+  return { stable, volatile }
+}
+
+// Mantiene la firma histórica (la usa test_agent.mjs): concatena ambos bloques.
+export function buildSystemPrompt(
+  clinicName: string,
+  config: AgentConfig,
+  treatments: Treatment[],
+  isOpen: boolean,
+  currentStage: ConversationStage = 'welcome',
+  clientName?: string | null,
+  clientContext?: ClientContext
+): string {
+  const { stable, volatile } = buildSystemBlocks(
+    clinicName, config, treatments, isOpen, currentStage, clientName, clientContext
+  )
+  return `${stable}\n\n${volatile}`
 }
 
 // ---------------------------------------------------------------------------
 // Analysis tool — Módulo 2 (estados) + Módulo 4 (objeciones) + Módulo 6 (escalado)
 // ---------------------------------------------------------------------------
 
-const ANALYSIS_TOOL = {
+const ANALYSIS_TOOL: Anthropic.Tool = {
   name: 'analyze_conversation',
   description: 'Registra el análisis del estado del lead tras tu respuesta. Llama SIEMPRE a esta herramienta.',
   input_schema: {
@@ -540,7 +580,8 @@ export async function generateAgentResponse(
     supabase.from('clinics').select('name').eq('id', clinicId).single(),
     supabase.from('agent_config').select('*').eq('clinic_id', clinicId).single(),
     supabase.from('treatments').select('*').eq('clinic_id', clinicId).eq('active', true).is('deleted_at', null),
-    supabase.from('messages').select('*').eq('lead_id', leadId).order('created_at').limit(20),
+    // Los 20 más RECIENTES (descendente); formatHistory los reordena ascendente.
+    supabase.from('messages').select('*').eq('lead_id', leadId).order('created_at', { ascending: false }).limit(20),
     supabase.from('leads').select('*').eq('id', leadId).single(),
     supabase
       .from('appointments')
@@ -567,6 +608,13 @@ export async function generateAgentResponse(
 
   if (lead?.escalated) {
     return { responses: [], analysis: failsafe('already_escalated'), was_sent: false, reason_not_sent: 'already_escalated' }
+  }
+
+  // Cuando el agente falla y responde con el fallback ("el equipo te contactará"),
+  // esa promesa tiene que llegarle a alguien: escalar el lead + avisar al owner.
+  const escalateOnFailure = async (reason: string) => {
+    await supabase.from('leads').update({ escalated: true, conversation_stage: 'escalated' }).eq('id', leadId)
+    notifyOwner(clinicId, escalationMessage(lead?.name ?? null, lead?.phone ?? '', reason, leadId), supabase).catch(() => {})
   }
 
   // Count only agent messages since the last time a human explicitly returned control
@@ -618,7 +666,13 @@ export async function generateAgentResponse(
     notes: lead?.notes ?? null,
   }
 
-  const systemPrompt = buildSystemPrompt(clinic.name, config, treatments, isOpen, currentStage, clientName, clientContext)
+  const { stable, volatile } = buildSystemBlocks(clinic.name, config, treatments, isOpen, currentStage, clientName, clientContext)
+  // Bloque estable cacheado por clínica; el volátil (fecha/etapa) va después
+  // del breakpoint para no invalidar la caché en cada turno.
+  const system: Anthropic.TextBlockParam[] = [
+    { type: 'text', text: stable, cache_control: { type: 'ephemeral' } },
+    { type: 'text', text: volatile },
+  ]
   const conversation = formatHistory(history)
   const last = conversation[conversation.length - 1]
   if (!last || last.content !== incomingMessage) {
@@ -629,17 +683,22 @@ export async function generateAgentResponse(
   let analysis: AgentAnalysis = failsafe('no_tool_call')
 
   try {
-    const textCompletion = await getOpenAI().chat.completions.create({
+    const textResponse = await getAnthropic().messages.create({
       model: MODEL,
       max_tokens: MAX_TOKENS,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...conversation,
-      ],
+      system,
+      messages: conversation,
+      thinking: { type: 'disabled' },
+      output_config: { effort: 'low' },
     })
-    rawResponse = textCompletion.choices[0].message.content?.trim() ?? ''
+    rawResponse = textResponse.content
+      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+      .map(b => b.text)
+      .join('\n')
+      .trim()
 
     if (!rawResponse) {
+      await escalateOnFailure('empty_response')
       return {
         responses: [config.fallback_message],
         analysis: { ...analysis, should_escalate: true, escalation_reason: 'empty_response', next_stage: 'escalated' },
@@ -658,28 +717,27 @@ export async function generateAgentResponse(
         client_name: null,
       }
     } else {
-      const analysisCompletion = await getOpenAI().chat.completions.create({
+      // Nota: el turno assistant NO puede ser el último (sería un prefill, que
+      // devuelve 400 en Sonnet 4.6) — se cierra con un turno user de instrucción.
+      const analysisResponse = await getAnthropic().messages.create({
         model: MODEL,
         max_tokens: 300,
+        system,
         messages: [
-          { role: 'system', content: systemPrompt },
           ...conversation,
           { role: 'assistant', content: rawResponse },
+          { role: 'user', content: 'Registra ahora el análisis de la conversación llamando a analyze_conversation.' },
         ],
-        tools: [{
-          type: 'function',
-          function: {
-            name: ANALYSIS_TOOL.name,
-            description: ANALYSIS_TOOL.description,
-            parameters: ANALYSIS_TOOL.input_schema,
-          },
-        }],
-        tool_choice: { type: 'function', function: { name: 'analyze_conversation' } },
+        tools: [ANALYSIS_TOOL],
+        tool_choice: { type: 'tool', name: 'analyze_conversation' },
+        thinking: { type: 'disabled' },
       })
 
-      const toolCall = analysisCompletion.choices[0].message.tool_calls?.[0]
-      if (toolCall && toolCall.type === 'function') {
-        const input = JSON.parse(toolCall.function.arguments) as Partial<AgentAnalysis>
+      const toolUse = analysisResponse.content.find(
+        (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === 'analyze_conversation'
+      )
+      if (toolUse) {
+        const input = toolUse.input as Partial<AgentAnalysis>
         analysis = {
           should_escalate: input.should_escalate ?? false,
           escalation_reason: input.escalation_reason,
@@ -695,12 +753,13 @@ export async function generateAgentResponse(
       }
     }
   } catch (err) {
-    console.error('[agent] OpenAI error:', err)
+    console.error('[agent] Anthropic error:', err)
+    await escalateOnFailure('anthropic_error')
     return {
       responses: [config.fallback_message],
-      analysis: failsafe('openai_error'),
+      analysis: failsafe('anthropic_error'),
       was_sent: true,
-      reason_not_sent: 'openai_error',
+      reason_not_sent: 'anthropic_error',
     }
   }
 
@@ -919,13 +978,21 @@ export async function generateFollowUpMessage(
   )
 
   try {
-    const completion = await getOpenAI().chat.completions.create({
+    // Anthropic exige al menos un mensaje user; la instrucción vive en system.
+    const completion = await getAnthropic().messages.create({
       model: MODEL,
       max_tokens: 256,
-      messages: [{ role: 'system', content: systemPrompt }],
+      system: systemPrompt,
+      messages: [{ role: 'user', content: 'Escribe ahora el mensaje para el cliente.' }],
+      thinking: { type: 'disabled' },
+      output_config: { effort: 'low' },
     })
 
-    const raw = completion.choices[0].message.content?.trim() ?? ''
+    const raw = completion.content
+      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+      .map(b => b.text)
+      .join('\n')
+      .trim()
     if (!raw) {
       return { responses: [], analysis: failsafe('empty_response'), was_sent: false, reason_not_sent: 'empty_response' }
     }
@@ -950,7 +1017,7 @@ export async function generateFollowUpMessage(
     return { responses, analysis, was_sent: true }
   } catch (err) {
     console.error('[agent] generateFollowUpMessage error:', err)
-    return { responses: [], analysis: failsafe('openai_error'), was_sent: false, reason_not_sent: 'openai_error' }
+    return { responses: [], analysis: failsafe('anthropic_error'), was_sent: false, reason_not_sent: 'anthropic_error' }
   }
 }
 

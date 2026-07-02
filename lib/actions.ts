@@ -277,11 +277,16 @@ export async function saveZApiCredentials(formData: {
 }) {
   const supabase = createClient()
   const clinicId = await getCurrentClinicId()
+  const instanceId = formData.instanceId.trim()
+  const token = formData.token.trim()
+  // Un z_api_instance_id vacío ('') matchearía el fallback del webhook y
+  // recibiría mensajes de otras clínicas — nunca guardarlo vacío.
+  if (!instanceId || !token) throw new Error('El Instance ID y el Token de Z-API son obligatorios')
   const { error } = await supabase
     .from('clinics')
     .update({
-      z_api_instance_id:   formData.instanceId.trim(),
-      z_api_token:         formData.token.trim(),
+      z_api_instance_id:   instanceId,
+      z_api_token:         token,
       z_api_client_token:  formData.clientToken.trim() || null,
       phone_whatsapp:      formData.phoneWhatsapp.trim(),
       z_api_connected:     false,

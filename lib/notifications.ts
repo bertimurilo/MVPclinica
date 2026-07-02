@@ -35,7 +35,9 @@ export function escalationMessage(leadName: string | null, phone: string, reason
     reason === 'max_messages_reached' ? 'máximo de mensajes automáticos alcanzado' :
     reason === 'objection_limit'      ? '3 objeciones consecutivas sin resolver' :
     reason === 'ai_decision'          ? 'el agente detectó que necesita intervención humana' :
-    reason === 'openai_error'         ? 'error técnico del agente IA' :
+    reason === 'anthropic_error'      ? 'error técnico del agente IA' :
+    reason === 'empty_response'       ? 'el agente devolvió una respuesta vacía' :
+    reason === 'send_failed'          ? 'no se pudo entregar la respuesta por WhatsApp — revisa la conexión de Z-API' :
                                         reason
   return `🚨 Lead escalado: ${who}\nMotivo: ${reasonLabel}\nVer: ${APP_URL}/leads/${leadId}`
 }
