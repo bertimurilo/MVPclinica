@@ -101,7 +101,9 @@ CREATE TABLE messages (
   z_api_message_id TEXT,
   response_time_seconds INTEGER,
   out_of_hours BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT now()
+  created_at TIMESTAMPTZ DEFAULT now(),
+  -- Dedupe atómico de webhooks Z-API (los outbound llevan NULL, que no colisiona)
+  CONSTRAINT messages_clinic_zapi_msg_unique UNIQUE (clinic_id, z_api_message_id)
 );
 
 -- 7. CITAS

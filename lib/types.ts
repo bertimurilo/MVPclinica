@@ -214,7 +214,7 @@ export interface AgentResult {
   responses: string[];
   analysis: AgentAnalysis;
   was_sent: boolean;
-  reason_not_sent?: 'max_messages_reached' | 'already_escalated' | 'config_missing' | 'openai_error' | 'empty_response';
+  reason_not_sent?: 'max_messages_reached' | 'already_escalated' | 'config_missing' | 'anthropic_error' | 'empty_response';
 }
 
 // --- Activity Timeline ---

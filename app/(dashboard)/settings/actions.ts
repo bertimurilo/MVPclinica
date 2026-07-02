@@ -219,7 +219,8 @@ async function parsePdfBuffer(buffer: Buffer): Promise<ParsedTreatment[]> {
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   const msg = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    // claude-sonnet-4-20250514 está deprecado (retirada: 15 jun 2026) — alias actual.
+    model: 'claude-sonnet-4-6',
     max_tokens: 4096,
     system: `Eres un asistente que extrae listas de tratamientos estéticos de texto sin estructurar.\nResponde ÚNICAMENTE con un array JSON válido, sin explicaciones ni markdown.\nCada objeto debe tener: { "name": string, "price": number|null, "duration_minutes": number|null, "description": string|null, "category": string|null }\nPara category, intenta clasificar en: "Facial", "Corporal", "Capilar", "Medicina estética" u "Otro".\nSi un campo no está disponible, usa null.`,
     messages: [{ role: 'user', content: text.slice(0, 50000) }],
